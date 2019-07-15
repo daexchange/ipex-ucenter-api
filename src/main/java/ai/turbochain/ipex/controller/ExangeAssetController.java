@@ -8,7 +8,6 @@ import java.math.BigDecimal;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,6 +15,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.SessionAttribute;
 
+import ai.turbochain.ipex.constant.BooleanEnum;
+import ai.turbochain.ipex.constant.CertifiedBusinessStatus;
+import ai.turbochain.ipex.constant.CommonStatus;
+import ai.turbochain.ipex.constant.RealNameStatus;
 import ai.turbochain.ipex.constant.SysConstant;
 import ai.turbochain.ipex.entity.Member;
 import ai.turbochain.ipex.entity.MemberWallet;
@@ -44,19 +47,18 @@ public class ExangeAssetController {
     @Autowired
     private LocaleMessageSourceService messageSourceService;
     
-    boolean checkJyPassword(Long memberId, String jyPassword) throws Exception {
+    boolean checkJyPassword(Member memberFrom, String jyPassword) throws Exception {
        
     	hasText(jyPassword, messageSourceService.getMessage("MISSING_JYPASSWORD"));
-
-    	Member member = memberService.findOne(memberId);
     	
-    	String mbPassword = member.getJyPassword();
+    	String mbPassword = memberFrom.getJyPassword();
          
-         Assert.hasText(mbPassword, messageSourceService.getMessage("NO_SET_JYPASSWORD"));
-         Assert.isTrue(Md5.md5Digest(jyPassword + member.getSalt()).toLowerCase().equals(mbPassword), messageSourceService.getMessage("ERROR_JYPASSWORD"));
+        Assert.hasText(mbPassword, messageSourceService.getMessage("NO_SET_JYPASSWORD"));
+        Assert.isTrue(Md5.md5Digest(jyPassword + memberFrom.getSalt()).toLowerCase().equals(mbPassword), messageSourceService.getMessage("ERROR_JYPASSWORD"));
        
-         return true;
+        return true;
     }
+    
     
     /**
      * 转账
@@ -80,17 +82,18 @@ public class ExangeAssetController {
         
     	Long memberId = user.getId();
     	
-        checkJyPassword(memberId, jyPassword);
+    	Member memberFrom = memberService.findOne(memberId);
+
+    	//校验交易密码
+        checkJyPassword(memberFrom, jyPassword);
        
     	MemberWallet memberWallet = memberWalletService.getMemberWalletByCoinAndMemberId(coinId, memberId);
         
     	if (memberWallet.getBalance().compareTo(amount) < 0) {
             return new MessageResult(500, "余额不足");
         }
-    	//TODO 1.限制转账
-    	//TODO 2.扣减手续费
     	
-    	// TODO　格式验证
+    	//TODO 2.扣减手续费
     	
     	Member memberTo = memberService.findByEmail(email);
     	
@@ -98,10 +101,48 @@ public class ExangeAssetController {
     		// TODO 国际化
     		return MessageResult.error("该邮件尚未注册会员！");
     	}
+
+    	//TODO 1.限制转账
+    	checkMemberTransferLimit(memberTo,messageSourceService);
+    	checkMemberTransferLimit(memberFrom,messageSourceService);
     	
     	exangeService.transferToOther(
     			memberWallet,coinId, memberId, memberTo.getId(), amount);
     	
     	return new MessageResult(0,"success");
     }
+    
+    
+   public static void checkMemberTransferLimit(final Member member,LocaleMessageSourceService messageSourceService) {
+	   
+	   /**
+        * 0表示禁止交易
+        */
+       Assert.isTrue(BooleanEnum.IS_TRUE.equals(member.getTransactionStatus()), "该账户已被禁止交易");
+
+       /**
+        * 认证商家状态
+        */
+       Assert.isTrue(CertifiedBusinessStatus.VERIFIED.equals(member.getCertifiedBusinessStatus()),"请先认证商家");
+        
+       /**
+        * 实名认证
+        */
+       Assert.isTrue(RealNameStatus.VERIFIED.equals(member.getRealNameStatus()),"请先实名认证");
+
+       /**
+        * 账户状态
+        */
+       Assert.isTrue(CommonStatus.ILLEGAL.equals(member.getStatus()),"账号目前状态不合法");
+
+   	  String mbPassword = member.getJyPassword();
+    
+   	  Assert.hasText(mbPassword, messageSourceService.getMessage("NO_SET_JYPASSWORD"));
+  
+       /**
+        * 投诉过多
+        */
+       Assert.isTrue(member.getAppealSuccessTimes()>(member.getAppealTimes()/2),"投诉过多，禁止交易");
+    }
+    
 }

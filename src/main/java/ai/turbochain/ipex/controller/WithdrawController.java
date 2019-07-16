@@ -231,7 +231,7 @@ public class WithdrawController {
     }
 
     /**
-     * 申请提币（添加验证码校验）
+     * 申请提币（添加验证码校验） 暂时去掉验证码
      * @param user
      * @param unit
      * @param address
@@ -265,7 +265,7 @@ public class WithdrawController {
         String mbPassword = member.getJyPassword();
         Assert.hasText(mbPassword, sourceService.getMessage("NO_SET_JYPASSWORD"));
         Assert.isTrue(Md5.md5Digest(jyPassword + member.getSalt()).toLowerCase().equals(mbPassword), sourceService.getMessage("ERROR_JYPASSWORD"));
-        ValueOperations valueOperations = redisTemplate.opsForValue();
+        /*ValueOperations valueOperations = redisTemplate.opsForValue();
         String phone= member.getMobilePhone();
         Object codeRedis =valueOperations.get(SysConstant.PHONE_WITHDRAW_MONEY_CODE_PREFIX + phone);
         notNull(codeRedis, sourceService.getMessage("VERIFICATION_CODE_NOT_EXISTS"));
@@ -273,7 +273,7 @@ public class WithdrawController {
             return error(sourceService.getMessage("VERIFICATION_CODE_INCORRECT"));
         } else {
             valueOperations.getOperations().delete(SysConstant.PHONE_WITHDRAW_MONEY_CODE_PREFIX + phone);
-        }
+        }*/
         MessageResult result = memberWalletService.freezeBalance(memberWallet, amount);
         if (result.getCode() != 0) {
             throw new InformationExpiredException("Information Expired");

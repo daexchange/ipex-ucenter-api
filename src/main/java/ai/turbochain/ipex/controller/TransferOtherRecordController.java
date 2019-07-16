@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.SessionAttribute;
 
-import ai.turbochain.ipex.entity.WalletTransferOtherRecord;
+import ai.turbochain.ipex.entity.TransferOtherRecord;
 import ai.turbochain.ipex.entity.transform.AuthMember;
 import ai.turbochain.ipex.service.MemberService;
 import ai.turbochain.ipex.service.WalletTransferOtherRecordService;
@@ -40,7 +40,7 @@ public class TransferOtherRecordController {
         
     	MessageResult result = MessageResult.success();
         
-        Page<WalletTransferOtherRecord> pageList = walletTransferOtherRecordService.queryRewardPromotionPage(pageNo, pageSize, memberService.findOne(member.getId()));
+        Page<TransferOtherRecord> pageList = walletTransferOtherRecordService.queryRewardPromotionPage(pageNo, pageSize, memberService.findOne(member.getId()));
 		 
         result.setData(pageList.getContent());
         result.setTotalPage(pageList.getTotalPages() + "");

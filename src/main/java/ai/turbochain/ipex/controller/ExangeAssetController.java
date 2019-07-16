@@ -106,10 +106,9 @@ public class ExangeAssetController {
     	checkMemberTransferLimit(memberTo,messageSourceService);
     	checkMemberTransferLimit(memberFrom,messageSourceService);
     	
-    	exangeService.transferToOther(
-    			memberWallet,coinId, memberId, memberTo.getId(), amount);
+    	MessageResult messageResult = exangeService.transferToOther(memberWallet,coinId, memberId, memberTo.getId(), amount);
     	
-    	return new MessageResult(0,"success");
+    	return messageResult;
     }
     
     
@@ -120,6 +119,10 @@ public class ExangeAssetController {
         */
        Assert.isTrue(BooleanEnum.IS_TRUE.equals(member.getTransactionStatus()), "该账户已被禁止交易");
 
+       String mbPassword = member.getJyPassword();
+       
+       Assert.hasText(mbPassword, messageSourceService.getMessage("NO_SET_JYPASSWORD"));
+   
        /**
         * 认证商家状态
         */
@@ -131,18 +134,17 @@ public class ExangeAssetController {
        Assert.isTrue(RealNameStatus.VERIFIED.equals(member.getRealNameStatus()),"请先实名认证");
 
        /**
-        * 账户状态
-        */
-       Assert.isTrue(CommonStatus.ILLEGAL.equals(member.getStatus()),"账号目前状态不合法");
-
-   	  String mbPassword = member.getJyPassword();
-    
-   	  Assert.hasText(mbPassword, messageSourceService.getMessage("NO_SET_JYPASSWORD"));
-  
-       /**
         * 投诉过多
         */
-       Assert.isTrue(member.getAppealSuccessTimes()>(member.getAppealTimes()/2),"投诉过多，禁止交易");
-    }
+       if (member.getAppealTimes()>1) {
+           Assert.isTrue(member.getAppealSuccessTimes()>(member.getAppealTimes()/2),"投诉过多，禁止交易");
+       }
+    
+       /**
+        * 账户状态
+        */
+       Assert.isTrue(CommonStatus.NORMAL.equals(member.getStatus()),"账号目前状态不合法");
+
+   }
     
 }

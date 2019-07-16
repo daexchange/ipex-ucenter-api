@@ -82,7 +82,7 @@ public class WithdrawController {
     private MemberTransactionService memberTransactionService ;
 
     /**
-     * 增加提现地址
+     * 增加提现地址   暂时去掉验证码
      * @param address
      * @param unit
      * @param remark
@@ -96,7 +96,7 @@ public class WithdrawController {
     public MessageResult addAddress(String address, String unit, String remark, String code, String aims, @SessionAttribute(SESSION_MEMBER) AuthMember user) {
         hasText(address, sourceService.getMessage("MISSING_COIN_ADDRESS"));
         hasText(unit, sourceService.getMessage("MISSING_COIN_TYPE"));
-        hasText(code, sourceService.getMessage("MISSING_VERIFICATION_CODE"));
+        /*hasText(code, sourceService.getMessage("MISSING_VERIFICATION_CODE"));
         hasText(aims, sourceService.getMessage("MISSING_PHONE_OR_EMAIL"));
         ValueOperations valueOperations = redisTemplate.opsForValue();
         Member member = memberService.findOne(user.getId());
@@ -116,7 +116,7 @@ public class WithdrawController {
             }
         } else {
             return MessageResult.error(sourceService.getMessage("ADD_ADDRESS_FAILED"));
-        }
+        }*/
         MessageResult result = memberAddressService.addMemberAddress(user.getId(), address, unit, remark);
         if (result.getCode() == 0) {
             result.setMessage(sourceService.getMessage("ADD_ADDRESS_SUCCESS"));

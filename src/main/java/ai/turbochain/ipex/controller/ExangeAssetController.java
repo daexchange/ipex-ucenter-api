@@ -71,6 +71,7 @@ public class ExangeAssetController {
     public MessageResult transfer(@SessionAttribute(SESSION_MEMBER) AuthMember user, 
     		String coinId, String email,
             BigDecimal amount, BigDecimal fee, @RequestParam("code") String code, String jyPassword) throws Exception {
+    	MessageResult messageResult = null;
     	
     	/*String key = SysConstant.EMAIL_EXANGE_TRANSFER_PREFIX  + user.getEmail();
     	
@@ -82,31 +83,39 @@ public class ExangeAssetController {
         */
     	Long memberId = user.getId();
     	
-    	Member memberFrom = memberService.findOne(memberId);
-
-    	//校验交易密码
-        checkJyPassword(memberFrom, jyPassword);
-       
-    	MemberWallet memberWallet = memberWalletService.getMemberWalletByCoinAndMemberId(coinId, memberId);
-        
-    	if (memberWallet.getBalance().compareTo(amount) < 0) {
-            return new MessageResult(500, "余额不足");
+    	if (user.getEmail().equals(email)) {
+            return new MessageResult(500, "不能转账给本人");
         }
     	
-    	//TODO 2.扣减手续费
-    	
-    	Member memberTo = memberService.findByEmail(email);
-    	
-    	if (memberTo==null) {
-    		// TODO 国际化
-    		return MessageResult.error("该邮件尚未注册会员！");
-    	}
+    	Member memberFrom = memberService.findOne(memberId);
+    	try {
+    		//校验交易密码
+            checkJyPassword(memberFrom, jyPassword);
+           
+        	MemberWallet memberWallet = memberWalletService.getMemberWalletByCoinAndMemberId(coinId, memberId);
+            
+        	if (memberWallet.getBalance().compareTo(amount) < 0) {
+                return new MessageResult(500, "余额不足");
+            }
+        	
+        	//TODO 2.扣减手续费
+        	
+        	Member memberTo = memberService.findByEmail(email);
+        	
+        	if (memberTo==null) {
+        		// TODO 国际化
+        		return MessageResult.error("该邮件尚未注册会员！");
+        	}
 
-    	//TODO 1.限制转账
-    	checkMemberTransferLimit(memberTo,messageSourceService);
-    	checkMemberTransferLimit(memberFrom,messageSourceService);
-    	
-    	MessageResult messageResult = exangeService.transferToOther(memberWallet,coinId, memberId, memberTo.getId(), amount);
+        	//TODO 1.限制转账
+            checkMemberTransferLimit(memberFrom,messageSourceService);
+        	checkMemberTransferToLimit(memberTo,messageSourceService);
+        	
+        	messageResult = exangeService.transferToOther(memberWallet,coinId, memberId, memberTo.getId(), amount);
+    	} catch (Exception e) {
+    		e.printStackTrace();
+    		messageResult = new MessageResult(500,e.getMessage());
+    	}
     	
     	return messageResult;
     }
@@ -147,4 +156,39 @@ public class ExangeAssetController {
 
    }
     
+   
+   public static void checkMemberTransferToLimit(final Member memberTo,LocaleMessageSourceService messageSourceService) {
+	   
+	   /**
+        * 0表示禁止交易
+        */
+       Assert.isTrue(BooleanEnum.IS_TRUE.equals(memberTo.getTransactionStatus()), "转账账户已被禁止交易");
+
+       String mbPassword = memberTo.getJyPassword();
+       
+       Assert.hasText(mbPassword, messageSourceService.getMessage("NO_SET_JYPASSWORD"));
+   
+       /**
+        * 认证商家状态
+        */
+      // Assert.isTrue(CertifiedBusinessStatus.VERIFIED.equals(memberTo.getCertifiedBusinessStatus()),"转账账户尚未认证商家");
+        
+       /**
+        * 实名认证
+        */
+       Assert.isTrue(RealNameStatus.VERIFIED.equals(memberTo.getRealNameStatus()),"转账账户尚未实名认证");
+
+       /**
+        * 投诉过多
+        */
+       if (memberTo.getAppealTimes()>1) {
+           Assert.isTrue(memberTo.getAppealSuccessTimes()>(memberTo.getAppealTimes()/2),"转账账户被投诉过多，禁止交易");
+       }
+    
+       /**
+        * 账户状态
+        */
+       Assert.isTrue(CommonStatus.NORMAL.equals(memberTo.getStatus()),"转账账户状态不合法");
+
+   }
 }

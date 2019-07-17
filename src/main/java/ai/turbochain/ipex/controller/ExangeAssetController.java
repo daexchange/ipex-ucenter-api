@@ -61,7 +61,7 @@ public class ExangeAssetController {
     
     
     /**
-     * 转账
+     * 转账  暂时去掉手机验证码验证
      * @param user
      * @return
      * @throws Exception
@@ -72,14 +72,14 @@ public class ExangeAssetController {
     		String coinId, String email,
             BigDecimal amount, BigDecimal fee, @RequestParam("code") String code, String jyPassword) throws Exception {
     	
-    	String key = SysConstant.EMAIL_EXANGE_TRANSFER_PREFIX  + user.getEmail();
+    	/*String key = SysConstant.EMAIL_EXANGE_TRANSFER_PREFIX  + user.getEmail();
     	
     	Object cache = redisTemplate.opsForValue().get(key);
         
     	if (null == cache || !code.equals(cache.toString())) {
             return MessageResult.error(messageSourceService.getMessage("VERIFICATION_CODE_INCORRECT"));
         }
-        
+        */
     	Long memberId = user.getId();
     	
     	Member memberFrom = memberService.findOne(memberId);

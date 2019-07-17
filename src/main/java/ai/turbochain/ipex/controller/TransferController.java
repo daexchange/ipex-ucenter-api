@@ -24,7 +24,6 @@ import org.springframework.web.client.RestTemplate;
 
 import com.alibaba.fastjson.JSONObject;
 
-import ai.turbochain.ipex.entity.TransferAddressInfo;
 import ai.turbochain.ipex.constant.BooleanEnum;
 import ai.turbochain.ipex.constant.CommonStatus;
 import ai.turbochain.ipex.constant.TransactionType;
@@ -33,6 +32,7 @@ import ai.turbochain.ipex.entity.Member;
 import ai.turbochain.ipex.entity.MemberTransaction;
 import ai.turbochain.ipex.entity.MemberWallet;
 import ai.turbochain.ipex.entity.TransferAddress;
+import ai.turbochain.ipex.entity.TransferAddressInfo;
 import ai.turbochain.ipex.entity.TransferRecord;
 import ai.turbochain.ipex.entity.transform.AuthMember;
 import ai.turbochain.ipex.es.ESUtils;
@@ -51,8 +51,8 @@ import ai.turbochain.ipex.util.MessageResult;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * @author GS
- * @date 2018年02月27日
+ * @author  
+ * @date 
  */
 @RestController
 @Slf4j
@@ -82,7 +82,7 @@ public class TransferController {
     private MemberTransactionService memberTransactionService;
     @Autowired
     private MemberService memberService;
-
+    
     /**
      * 根据币种查询转账地址等信息
      *

@@ -208,8 +208,6 @@ public class WithdrawController {
     }
 
 
-
-
     /**
      * 申请提币(请到PC端提币或升级APP)
      * 没有验证码校验

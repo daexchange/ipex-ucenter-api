@@ -35,7 +35,7 @@ public class TransferOtherRecordController {
      */
     @RequestMapping(value = "/page")
     public MessageResult page(@SessionAttribute(SESSION_MEMBER) AuthMember member, 
-    		@RequestParam(value = "pageNo", defaultValue = "1") Integer pageNo, 
+    		@RequestParam(value = "page", defaultValue = "1") Integer pageNo, 
     		@RequestParam(value = "pageSize", defaultValue = "10") Integer pageSize) {
         
     	MessageResult result = MessageResult.success();

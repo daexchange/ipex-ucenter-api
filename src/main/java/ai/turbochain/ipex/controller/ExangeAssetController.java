@@ -8,7 +8,6 @@ import static org.springframework.util.Assert.notNull;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -26,7 +25,6 @@ import ai.turbochain.ipex.constant.RealNameStatus;
 import ai.turbochain.ipex.entity.Coin;
 import ai.turbochain.ipex.entity.Member;
 import ai.turbochain.ipex.entity.MemberWallet;
-import ai.turbochain.ipex.entity.TransferWalletInfo;
 import ai.turbochain.ipex.entity.transform.AuthMember;
 import ai.turbochain.ipex.service.CoinService;
 import ai.turbochain.ipex.service.ExangeService;

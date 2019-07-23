@@ -36,12 +36,6 @@ import org.springframework.web.bind.annotation.SessionAttribute;
 
 import com.querydsl.core.types.Predicate;
 
-import ai.turbochain.ipex.entity.BindAli;
-import ai.turbochain.ipex.entity.BindBank;
-import ai.turbochain.ipex.entity.BindWechat;
-import ai.turbochain.ipex.entity.CertifiedBusinessInfo;
-import ai.turbochain.ipex.entity.MemberAccount;
-import ai.turbochain.ipex.entity.MemberSecurity;
 import ai.turbochain.ipex.constant.AuditStatus;
 import ai.turbochain.ipex.constant.CertifiedBusinessStatus;
 import ai.turbochain.ipex.constant.CommonStatus;
@@ -50,13 +44,19 @@ import ai.turbochain.ipex.constant.RealNameStatus;
 import ai.turbochain.ipex.constant.SysConstant;
 import ai.turbochain.ipex.entity.Alipay;
 import ai.turbochain.ipex.entity.BankInfo;
+import ai.turbochain.ipex.entity.BindAli;
+import ai.turbochain.ipex.entity.BindBank;
+import ai.turbochain.ipex.entity.BindWechat;
 import ai.turbochain.ipex.entity.BusinessAuthApply;
 import ai.turbochain.ipex.entity.BusinessAuthDeposit;
 import ai.turbochain.ipex.entity.BusinessCancelApply;
+import ai.turbochain.ipex.entity.CertifiedBusinessInfo;
 import ai.turbochain.ipex.entity.Country;
 import ai.turbochain.ipex.entity.Member;
+import ai.turbochain.ipex.entity.MemberAccount;
 import ai.turbochain.ipex.entity.MemberApplication;
-import ai.turbochain.ipex.entity.MemberWallet;
+import ai.turbochain.ipex.entity.MemberLegalCurrencyWallet;
+import ai.turbochain.ipex.entity.MemberSecurity;
 import ai.turbochain.ipex.entity.QMemberApplication;
 import ai.turbochain.ipex.entity.WechatPay;
 import ai.turbochain.ipex.entity.transform.AuthMember;
@@ -68,10 +68,9 @@ import ai.turbochain.ipex.service.CountryService;
 import ai.turbochain.ipex.service.DepositRecordService;
 import ai.turbochain.ipex.service.LocaleMessageSourceService;
 import ai.turbochain.ipex.service.MemberApplicationService;
+import ai.turbochain.ipex.service.MemberLegalCurrencyWalletService;
 import ai.turbochain.ipex.service.MemberService;
-import ai.turbochain.ipex.service.MemberWalletService;
 import ai.turbochain.ipex.util.BindingResultUtil;
-import ai.turbochain.ipex.util.IdcardValidator;
 import ai.turbochain.ipex.util.Md5;
 import ai.turbochain.ipex.util.MessageResult;
 import ai.turbochain.ipex.util.ValidateUtil;
@@ -104,7 +103,7 @@ public class ApproveController {
     @Autowired
     private BusinessCancelApplyService businessCancelApplyService ;
     @Autowired
-    private MemberWalletService memberWalletService;
+    private MemberLegalCurrencyWalletService memberLegalCurrencyWalletService;
     @Autowired
     private BusinessAuthApplyService businessAuthApplyService;
     @Autowired
@@ -668,13 +667,13 @@ public class ApproveController {
             if(!flag){
                 return MessageResult.error("business auth deposit is not found");
             }
-            MemberWallet memberWallet=memberWalletService.findByCoinUnitAndMemberId(businessAuthDeposit.getCoin().getUnit(),member.getId());
-            if(memberWallet.getBalance().compareTo(businessAuthDeposit.getAmount())<0){
+            MemberLegalCurrencyWallet memberLegalCurrencyWallet = memberLegalCurrencyWalletService.findByCoinUnitAndMemberId(businessAuthDeposit.getCoin().getUnit(),member.getId());
+            if(memberLegalCurrencyWallet.getBalance().compareTo(businessAuthDeposit.getAmount())<0){
                 return MessageResult.error("您的余额不足");
             }
             //冻结保证金需要的金额
-            memberWallet.setBalance(memberWallet.getBalance().subtract(businessAuthDeposit.getAmount()));
-            memberWallet.setFrozenBalance(memberWallet.getFrozenBalance().add(businessAuthDeposit.getAmount()));
+            memberLegalCurrencyWallet.setBalance(memberLegalCurrencyWallet.getBalance().subtract(businessAuthDeposit.getAmount()));
+            memberLegalCurrencyWallet.setFrozenBalance(memberLegalCurrencyWallet.getFrozenBalance().add(businessAuthDeposit.getAmount()));
         }
         //申请记录
         BusinessAuthApply businessAuthApply=new BusinessAuthApply();

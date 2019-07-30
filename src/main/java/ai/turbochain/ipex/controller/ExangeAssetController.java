@@ -24,12 +24,15 @@ import ai.turbochain.ipex.constant.CommonStatus;
 import ai.turbochain.ipex.constant.RealNameStatus;
 import ai.turbochain.ipex.entity.Coin;
 import ai.turbochain.ipex.entity.Member;
+import ai.turbochain.ipex.entity.MemberExclusiveFee;
+import ai.turbochain.ipex.entity.MemberLevelFee;
 import ai.turbochain.ipex.entity.MemberWallet;
 import ai.turbochain.ipex.entity.transform.AuthMember;
 import ai.turbochain.ipex.service.CoinService;
 import ai.turbochain.ipex.service.ExangeService;
 import ai.turbochain.ipex.service.LocaleMessageSourceService;
-import ai.turbochain.ipex.service.MemberAddressService;
+import ai.turbochain.ipex.service.MemberExclusiveFeeService;
+import ai.turbochain.ipex.service.MemberLevelFeeService;
 import ai.turbochain.ipex.service.MemberService;
 import ai.turbochain.ipex.service.MemberWalletService;
 import ai.turbochain.ipex.util.Md5;
@@ -56,7 +59,9 @@ public class ExangeAssetController {
     @Autowired
     private CoinService coinService;
     @Autowired
-    private MemberAddressService memberAddressService;
+    private MemberLevelFeeService memberLevelFeeService;
+    @Autowired
+    private MemberExclusiveFeeService memberExclusiveFeeService;
     
     boolean checkJyPassword(Member memberFrom, String jyPassword) throws Exception {
        
@@ -81,7 +86,7 @@ public class ExangeAssetController {
     @Transactional(rollbackFor = Exception.class)
     public MessageResult transfer(@SessionAttribute(SESSION_MEMBER) AuthMember user, 
     		String coinId, String email,
-            BigDecimal amount, BigDecimal fee, @RequestParam("code") String code, String jyPassword) throws Exception {
+            BigDecimal amount,  @RequestParam("code") String code, String jyPassword) throws Exception {
     	MessageResult messageResult = null;
     	
     	/*String key = SysConstant.EMAIL_EXANGE_TRANSFER_PREFIX  + user.getEmail();
@@ -96,9 +101,6 @@ public class ExangeAssetController {
     	try {
     		Long memberId = user.getId();
         	
-        	if (user.getEmail().equals(email)) {
-                return new MessageResult(RESULT_FAIL_CODE, "不能转账给本人");
-            }
         	// 判断改货币是否支持转账
         	Coin coin = (Coin) coinService.findByUnit(coinId);
         	
@@ -107,6 +109,10 @@ public class ExangeAssetController {
         	if (coin.getStatus().equals(CommonStatus.ILLEGAL) && BooleanEnum.IS_FALSE.equals(coin.getCanTransfer())) {
         		return new MessageResult(RESULT_FAIL_CODE, "当前币种不支持转账");
         	}
+        	
+        	if (user.getEmail().equals(email)) {
+                return new MessageResult(RESULT_FAIL_CODE, "不能转账给本人");
+            }
         	
     		Member memberFrom = memberService.findOne(memberId);
     		
@@ -133,11 +139,15 @@ public class ExangeAssetController {
         	checkMemberTransferToLimit(memberTo,messageSourceService);
         	
         	// 2.扣减手续费
-        	if(fee == null|| fee.compareTo(coin.getMinerFee())!=0){
+        	BigDecimal fee = getMemberLevelFee(coin, memberId);
+        	
+        	if(fee == null){
         		return new MessageResult(RESULT_FAIL_CODE, "转账失败！");
         	}
         	
-        	messageResult = exangeService.transferToOther(memberWallet,coinId, memberId, memberTo.getId(), amount,fee);
+        	// 资金划转
+        	messageResult = exangeService.transferToOther(coinId, amount,fee, memberId, memberTo.getId());
+    	
     	} catch (Exception e) {
     		e.printStackTrace();
     		messageResult = new MessageResult(500,e.getMessage());
@@ -146,6 +156,31 @@ public class ExangeAssetController {
     	return messageResult;
     }
     
+    
+    /**
+     * 获取会员转账手续费
+     * 
+     * @param memberId
+     * @param coin
+     * @return
+     */
+    BigDecimal getMemberLevelFee(Coin coin,Long memberId) {
+    	// 1.获取VIP用户手续费
+    	MemberExclusiveFee memberExclusiveFee = memberExclusiveFeeService.findOneBySymbolAndMemberId(coin.getName(), memberId);
+    	if (memberExclusiveFee!=null) {
+    		return memberExclusiveFee.getFee();
+    	}
+    	
+    	// 2.根据会员等级获取对应手续费
+    	MemberLevelFee memberLevelFee = memberLevelFeeService.findOneBySymbolAndMemberLevelId(coin.getName(), memberId);
+    	
+    	if (memberLevelFee!=null) {
+    		return memberLevelFee.getFee();
+    	}
+    	
+    	// 3.获取币种默认手续费
+    	return coin.getMinerFee();
+   }
     
    public static void checkMemberTransferLimit(final Member member,LocaleMessageSourceService messageSourceService) {
 	   

@@ -96,7 +96,7 @@ public class WithdrawController {
     public MessageResult addAddress(String address, String unit, String remark, String code, String aims, @SessionAttribute(SESSION_MEMBER) AuthMember user) {
         hasText(address, sourceService.getMessage("MISSING_COIN_ADDRESS"));
         hasText(unit, sourceService.getMessage("MISSING_COIN_TYPE"));
-        /*hasText(code, sourceService.getMessage("MISSING_VERIFICATION_CODE"));
+        hasText(code, sourceService.getMessage("MISSING_VERIFICATION_CODE"));
         hasText(aims, sourceService.getMessage("MISSING_PHONE_OR_EMAIL"));
         ValueOperations valueOperations = redisTemplate.opsForValue();
         Member member = memberService.findOne(user.getId());
@@ -116,7 +116,7 @@ public class WithdrawController {
             }
         } else {
             return MessageResult.error(sourceService.getMessage("ADD_ADDRESS_FAILED"));
-        }*/
+        }
         MessageResult result = memberAddressService.addMemberAddress(user.getId(), address, unit, remark);
         if (result.getCode() == 0) {
             result.setMessage(sourceService.getMessage("ADD_ADDRESS_SUCCESS"));
@@ -263,7 +263,7 @@ public class WithdrawController {
         String mbPassword = member.getJyPassword();
         Assert.hasText(mbPassword, sourceService.getMessage("NO_SET_JYPASSWORD"));
         Assert.isTrue(Md5.md5Digest(jyPassword + member.getSalt()).toLowerCase().equals(mbPassword), sourceService.getMessage("ERROR_JYPASSWORD"));
-        /*ValueOperations valueOperations = redisTemplate.opsForValue();
+        ValueOperations valueOperations = redisTemplate.opsForValue();
         String phone= member.getMobilePhone();
         Object codeRedis =valueOperations.get(SysConstant.PHONE_WITHDRAW_MONEY_CODE_PREFIX + phone);
         notNull(codeRedis, sourceService.getMessage("VERIFICATION_CODE_NOT_EXISTS"));
@@ -271,7 +271,7 @@ public class WithdrawController {
             return error(sourceService.getMessage("VERIFICATION_CODE_INCORRECT"));
         } else {
             valueOperations.getOperations().delete(SysConstant.PHONE_WITHDRAW_MONEY_CODE_PREFIX + phone);
-        }*/
+        }
         MessageResult result = memberWalletService.freezeBalance(memberWallet, amount);
         if (result.getCode() != 0) {
             throw new InformationExpiredException("Information Expired");

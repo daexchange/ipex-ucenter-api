@@ -103,6 +103,7 @@ public class LegalCurrencyAssetController {
     @RequestMapping("/transfer")
     public MessageResult transfer(@SessionAttribute(SESSION_MEMBER) AuthMember member, 
     		AccountType from, AccountType to, String coinId, BigDecimal amount) throws Exception {
+    	
     	if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             return new MessageResult(500,"划转数量必须大于0");
         }
@@ -117,29 +118,14 @@ public class LegalCurrencyAssetController {
     	//TODO 2.划转
         if (AccountType.LegalCurrencyAccount.equals(from)&&// 法币转币币
         		AccountType.ExchangeAccount.equals(to)) {
-        	 
-        	MemberLegalCurrencyWallet memberLegalCurrencyWallet = memberLegalCurrencyWalletService.getMemberWalletByCoinAndMemberId(coinId, memberId);
-            
-        	if (memberLegalCurrencyWallet.getBalance().compareTo(amount) < 0) {
-                return new MessageResult(500, "可划转余额不足");
-            }
-        	
-        	memberLegalCurrencyWalletService.transferDecreaseBalance(memberLegalCurrencyWallet, coinId, memberId, amount);
+        	return memberLegalCurrencyWalletService.transferDecreaseBalance(coinId, memberId, amount);
         } else if (AccountType.ExchangeAccount.equals(from)&&// 币币转法币
         		AccountType.LegalCurrencyAccount.equals(to)) {
-        	 
-        	MemberWallet memberWallet = memberWalletService.getMemberWalletByCoinAndMemberId(coinId, memberId);
-            
-        	if (memberWallet.getBalance().compareTo(amount) < 0) {
-                return new MessageResult(500, "可划转余额不足");
-            }
-        	
-        	memberLegalCurrencyWalletService.transferIncreaseBalance(memberWallet, coinId, memberId, amount);
+        	return memberLegalCurrencyWalletService.transferIncreaseBalance(coinId, memberId, amount);
         } else {
         	return new MessageResult(500,"请重新选择划转账户");
         }
         
-        return new MessageResult(0,"success");
     }
     
    

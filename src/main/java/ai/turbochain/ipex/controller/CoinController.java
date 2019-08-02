@@ -1,5 +1,10 @@
 package ai.turbochain.ipex.controller;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -11,16 +16,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import ai.turbochain.ipex.constant.PageModel;
 import ai.turbochain.ipex.constant.SysConstant;
-import ai.turbochain.ipex.controller.BaseController;
 import ai.turbochain.ipex.entity.Coin;
 import ai.turbochain.ipex.service.CoinService;
 import ai.turbochain.ipex.util.MessageResult;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * @author GS
@@ -78,9 +77,9 @@ public class CoinController extends BaseController {
     	Object bondvalue =valueOperations.get(key);
           
         if (bondvalue==null) {
-            log.info(">>>>>>缓存中无利率转换数据>>>>>"+symbol);
+            log.info(symbol+">>>>>>缓存中无利率转换数据>>>>>");
         } else {
-            log.info(symbol+">>>>缓存中利率转换数据>>>"+bondvalue);
+            log.info(symbol+"缓存中利率转换数据为："+bondvalue);
         }
           
         return success(bondvalue);

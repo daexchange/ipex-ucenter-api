@@ -9,12 +9,14 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.SessionAttribute;
 
 import ai.turbochain.ipex.constant.AccountType;
+import ai.turbochain.ipex.constant.CertifiedBusinessStatus;
 import ai.turbochain.ipex.constant.TransactionType;
 import ai.turbochain.ipex.entity.Member;
 import ai.turbochain.ipex.entity.MemberLegalCurrencyWallet;
@@ -101,19 +103,19 @@ public class LegalCurrencyAssetController {
      * @return
      */
     @RequestMapping("/transfer")
-    public MessageResult transfer(@SessionAttribute(SESSION_MEMBER) AuthMember member, 
+    public MessageResult transfer(@SessionAttribute(SESSION_MEMBER) AuthMember authMember, 
     		AccountType from, AccountType to, String coinId, BigDecimal amount) throws Exception {
     	
     	if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             return new MessageResult(500,"划转数量必须大于0");
         }
        
-    	long memberId = member.getId();
+    	long memberId = authMember.getId();
     	
-    	Member memberFrom = memberService.findOne(memberId);
+    	Member member = memberService.findOne(memberId);
     	
     	//TODO 1.根据用户评分限制划转
-    	ExangeAssetController.checkMemberTransferLimit(memberFrom,messageSourceService);
+    	ExangeAssetController.checkMemberTransferToSelf(member,messageSourceService);
     	
     	//TODO 2.划转
         if (AccountType.LegalCurrencyAccount.equals(from)&&// 法币转币币

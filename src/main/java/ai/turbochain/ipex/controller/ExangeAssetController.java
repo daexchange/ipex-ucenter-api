@@ -102,7 +102,7 @@ public class ExangeAssetController {
     		Long memberId = user.getId();
         	
         	// 判断改货币是否支持转账
-        	Coin coin = (Coin) coinService.findByUnit(coinId);
+        	Coin coin = (Coin) coinService.findOne(coinId);
         	
         	notNull(coin, messageSourceService.getMessage("COIN_ILLEGAL"));
         	
@@ -136,7 +136,7 @@ public class ExangeAssetController {
 
         	// 1.限制转账
             checkMemberTransferLimit(memberFrom,messageSourceService);
-        	checkMemberTransferToLimit(memberTo,messageSourceService);
+            checkMemberTransferLimit(memberTo,messageSourceService);
         	
         	// 2.扣减手续费
         	BigDecimal fee = getMemberLevelFee(coin, memberId);
@@ -192,12 +192,7 @@ public class ExangeAssetController {
        String mbPassword = member.getJyPassword();
        
        Assert.hasText(mbPassword, messageSourceService.getMessage("NO_SET_JYPASSWORD"));
-   
-       /**
-        * 认证商家状态
-        */
-       Assert.isTrue(CertifiedBusinessStatus.VERIFIED.equals(member.getCertifiedBusinessStatus()),"请先认证商家");
-        
+      
        /**
         * 实名认证
         */
@@ -216,41 +211,15 @@ public class ExangeAssetController {
        Assert.isTrue(CommonStatus.NORMAL.equals(member.getStatus()),"账号目前状态不合法");
 
    }
-    
    
-   public static void checkMemberTransferToLimit(final Member memberTo,LocaleMessageSourceService messageSourceService) {
-	   
+   
+   public static void checkMemberTransferToSelf(final Member member,LocaleMessageSourceService messageSourceService) {
 	   /**
-        * 0表示禁止交易
-        */
-       Assert.isTrue(BooleanEnum.IS_TRUE.equals(memberTo.getTransactionStatus()), "转账账户已被禁止交易");
-
-       String mbPassword = memberTo.getJyPassword();
-       
-       Assert.hasText(mbPassword, messageSourceService.getMessage("NO_SET_JYPASSWORD"));
-   
-       /**
         * 认证商家状态
         */
-      // Assert.isTrue(CertifiedBusinessStatus.VERIFIED.equals(memberTo.getCertifiedBusinessStatus()),"转账账户尚未认证商家");
-        
-       /**
-        * 实名认证
-        */
-       Assert.isTrue(RealNameStatus.VERIFIED.equals(memberTo.getRealNameStatus()),"转账账户尚未实名认证");
-
-       /**
-        * 投诉过多
-        */
-       if (memberTo.getAppealTimes()>1) {
-           Assert.isTrue(memberTo.getAppealSuccessTimes()>(memberTo.getAppealTimes()/2),"转账账户被投诉过多，禁止交易");
-       }
-    
-       /**
-        * 账户状态
-        */
-       Assert.isTrue(CommonStatus.NORMAL.equals(memberTo.getStatus()),"转账账户状态不合法");
-
+       Assert.isTrue(CertifiedBusinessStatus.VERIFIED.equals(member.getCertifiedBusinessStatus()),"请先认证商家");
+       
+	   checkMemberTransferLimit(member,  messageSourceService);
    }
    
    

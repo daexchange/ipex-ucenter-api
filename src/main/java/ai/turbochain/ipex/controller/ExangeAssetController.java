@@ -217,7 +217,7 @@ public class ExangeAssetController {
 	   /**
         * 认证商家状态
         */
-       Assert.isTrue(CertifiedBusinessStatus.VERIFIED.equals(member.getCertifiedBusinessStatus()),"请先认证商家");
+      // Assert.isTrue(CertifiedBusinessStatus.VERIFIED.equals(member.getCertifiedBusinessStatus()),"请先认证商家");
        
 	   checkMemberTransferLimit(member,  messageSourceService);
    }

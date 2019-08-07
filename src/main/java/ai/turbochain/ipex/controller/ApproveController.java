@@ -808,10 +808,10 @@ public class ApproveController {
     @RequestMapping("/update/userName")
     @Transactional(rollbackFor = Exception.class)
     public MessageResult updateUserName(
-    		//@SessionAttribute(SESSION_MEMBER) AuthMember user, 
+    		@SessionAttribute(SESSION_MEMBER) AuthMember user, 
             @RequestParam(value = "userName", required = true) String userName) {
        
-    	Member member = memberService.findOne(73l);//user.getId()
+    	Member member = memberService.findOne(user.getId());
         
     	member.setUsername(userName);;
        

@@ -19,6 +19,8 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
+import org.jboss.logging.Param;
+import org.junit.runners.Parameterized.Parameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -796,4 +798,23 @@ public class ApproveController {
         return MessageResult.success();
     }
 
+    
+    /**
+     * 设置或更改昵称
+     *
+     * @param  userName
+     * @return
+     */
+    @RequestMapping("/update/userName")
+    @Transactional(rollbackFor = Exception.class)
+    public MessageResult updateUserName(
+    		//@SessionAttribute(SESSION_MEMBER) AuthMember user, 
+            @RequestParam(value = "userName", required = true) String userName) {
+       
+    	Member member = memberService.findOne(73l);//user.getId()
+        
+    	member.setUsername(userName);;
+       
+        return MessageResult.success();
+    }
 }

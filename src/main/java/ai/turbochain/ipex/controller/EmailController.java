@@ -293,5 +293,23 @@ public class EmailController {
 
 		return sendEmailCodeMethod(SysConstant.EMAIL_WITHDRAW_CODE_PREFIX, member.getEmail(), SUBJECT_CHECK);
 	}
+	
+	/**
+	 * 提币地址管理发送验证码
+	 * 
+	 * @param user
+	 * @return
+	 * @throws Exception
+	 */
+	@PostMapping("/withdraw/address/code")
+	public MessageResult withdrawAddressManageCode(@SessionAttribute(SESSION_MEMBER) AuthMember user) throws Exception {
+		Member member = memberService.findOne(user.getId());
+
+		if (member == null || member.getEmail() == null) {
+			return error(localeMessageSourceService.getMessage("EMAIL_ALREADY_BOUND"));
+		}
+
+		return sendEmailCodeMethod(SysConstant.EMAIL_WITHDRAW_ADDRESS_CODE_PREFIX, member.getEmail(), SUBJECT_CHECK);
+	}
 
 }

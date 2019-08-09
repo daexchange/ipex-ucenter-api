@@ -16,10 +16,10 @@ import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 
 /**
  * @author GS
- * @date 2017年12月29日
+ * @date 2017年12月29日引用ipex-otc-core redis配置
  */
-@Configuration
-@EnableCaching
+//@Configuration
+//@EnableCaching
 public class RedisCacheConfig extends CachingConfigurerSupport {
 
     /**
@@ -28,7 +28,7 @@ public class RedisCacheConfig extends CachingConfigurerSupport {
      * @param redisTemplate
      * @return
      */
-    @Bean
+    //@Bean
     public CacheManager cacheManager(RedisTemplate<?, ?> redisTemplate) {
         RedisCacheManager cacheManager = new RedisCacheManager(redisTemplate);
         // 设置缓存默认过期时间30分钟（全局的）
@@ -41,7 +41,7 @@ public class RedisCacheConfig extends CachingConfigurerSupport {
      * @param factory
      * @return
      */
-    @Bean
+    //@Bean
     public RedisTemplate<String, String> redisTemplate(RedisConnectionFactory factory) {
         StringRedisTemplate template = new StringRedisTemplate(factory);
         //定义key序列化方式

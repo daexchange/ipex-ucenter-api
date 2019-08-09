@@ -102,19 +102,13 @@ public class WithdrawController {
 		hasText(aims, sourceService.getMessage("MISSING_PHONE_OR_EMAIL"));
 		ValueOperations valueOperations = redisTemplate.opsForValue();
 		Member member = memberService.findOne(user.getId());
-		if (member.getMobilePhone() != null && aims.equals(member.getMobilePhone())) {
-			Object info = valueOperations.get(SysConstant.PHONE_ADD_ADDRESS_PREFIX + member.getMobilePhone());
-			if (info == null || !info.toString().equals(code)) {
-				return MessageResult.error(sourceService.getMessage("VERIFICATION_CODE_INCORRECT"));
-			} else {
-				valueOperations.getOperations().delete(SysConstant.PHONE_ADD_ADDRESS_PREFIX + member.getMobilePhone());
-			}
-		} else if (member.getEmail() != null && aims.equals(member.getEmail())) {
-			Object info = valueOperations.get(SysConstant.ADD_ADDRESS_CODE_PREFIX + member.getEmail());
+		if (member.getEmail() != null && aims.equals(member.getEmail())) {
+			Object info = valueOperations.get(SysConstant.EMAIL_WITHDRAW_ADDRESS_CODE_PREFIX + member.getEmail());
 			if (!info.toString().equals(code)) {
 				return MessageResult.error(sourceService.getMessage("VERIFICATION_CODE_INCORRECT"));
 			} else {
-				valueOperations.getOperations().delete(SysConstant.ADD_ADDRESS_CODE_PREFIX + member.getEmail());
+				valueOperations.getOperations()
+						.delete(SysConstant.EMAIL_WITHDRAW_ADDRESS_CODE_PREFIX + member.getEmail());
 			}
 		} else {
 			return MessageResult.error(sourceService.getMessage("ADD_ADDRESS_FAILED"));

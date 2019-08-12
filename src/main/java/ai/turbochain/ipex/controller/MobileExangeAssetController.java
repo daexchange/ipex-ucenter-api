@@ -142,11 +142,20 @@ public class MobileExangeAssetController {
     */
    @RequestMapping("/wallet")
    public MessageResult queryWallet(
-		@RequestParam(value = "memberId", required = true) Long memberId,
+		@RequestParam(value = "email", required = true) String email,
    		@RequestParam(value = "coinId", required = false) String coinId ) {
 		  
 	   MessageResult result = MessageResult.success();
 	  
+	   Member memberFrom = memberService.findByEmail(email);
+		
+	   if (memberFrom==null) {
+   		// TODO 国际化
+   		return MessageResult.error("该邮件地址尚未注册会员！");
+	   }
+	   
+	   Long memberId = memberFrom.getId();
+	 
 	   if (StringUtils.isBlank(coinId)) {
 		   List<MemberWallet>  list = memberWalletService.findAllByMemberId(memberId);
 		   result.setData(list);

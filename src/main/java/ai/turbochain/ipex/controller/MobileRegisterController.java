@@ -19,6 +19,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.client.RestTemplate;
@@ -74,16 +76,17 @@ public class MobileRegisterController {
      *
      * @param loginByEmail
      * @param bindingResult
-     * @return
+     * @return @RequestBody
      * @throws Exception
      */
-    @RequestMapping("/email")
-    @ResponseBody
+   // @RequestMapping(value ="/email", method = RequestMethod.POST,produces = "application/json;charset=UTF-8",consumes = "application/json;charset=UTF-8")
+	@PostMapping(value ="/email")
+	@ResponseBody
     @Transactional(rollbackFor = Exception.class)
     public MessageResult registerByEmail(
-            @Valid MobileRegisterByEmail mobileRegisterByEmail,
+            @Valid @RequestBody MobileRegisterByEmail mobileRegisterByEmail,
             BindingResult bindingResult,HttpServletRequest request) throws Exception {
-        
+        log.info("registerByEmail start");
     	MessageResult result = BindingResultUtil.validate(bindingResult);
        
         if (result != null) {
@@ -120,6 +123,7 @@ public class MobileRegisterController {
 
             Member member1 = memberService.save(getMember(mobileRegisterByEmail));
             
+            log.info("registerByEmail end");
             if (member1 != null) {
             	afterRegister(member1.getId());
                 return success(localeMessageSourceService.getMessage("REGISTRATION_SUCCESS"));

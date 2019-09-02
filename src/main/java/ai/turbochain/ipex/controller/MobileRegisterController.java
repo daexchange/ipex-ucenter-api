@@ -237,11 +237,11 @@ public class MobileRegisterController {
      * @param password 新密码
      * @return
      */
-    @RequestMapping(value = "/reset-password")//,@RequestBody method = RequestMethod.POST
+    @RequestMapping(value = "/reset-password", method = RequestMethod.POST)
     @ResponseBody
     @Transactional(rollbackFor = Exception.class)
     public MessageResult forgetPassword(
-        @Valid  MobileRegisterByEmail mobileRegisterByEmail,
+        @Valid MobileRegisterByEmail mobileRegisterByEmail,
         BindingResult bindingResult,HttpServletRequest request) throws Exception {
     	log.info("reset-password start");
     	MessageResult result = BindingResultUtil.validate(bindingResult);

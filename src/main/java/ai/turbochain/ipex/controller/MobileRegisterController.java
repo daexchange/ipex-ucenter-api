@@ -2,6 +2,8 @@ package ai.turbochain.ipex.controller;
 
 import static ai.turbochain.ipex.util.MessageResult.error;
 import static ai.turbochain.ipex.util.MessageResult.success;
+import static org.springframework.util.Assert.isTrue;
+import static org.springframework.util.Assert.notNull;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -15,6 +17,7 @@ import org.apache.shiro.util.ByteSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,12 +25,14 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.client.RestTemplate;
 
 import ai.turbochain.ipex.constant.BooleanEnum;
 import ai.turbochain.ipex.constant.CommonStatus;
 import ai.turbochain.ipex.constant.MemberLevelEnum;
+import ai.turbochain.ipex.constant.SysConstant;
 import ai.turbochain.ipex.entity.Coin;
 import ai.turbochain.ipex.entity.Country;
 import ai.turbochain.ipex.entity.Location;
@@ -222,4 +227,40 @@ public class MobileRegisterController {
 		}
 	}
 	
+	
+	/**
+     * 忘记密码后重置密码
+     *
+     * @param mode     0为手机验证，1为邮箱验证
+     * @param account  手机或邮箱
+     * @param code     验证码
+     * @param password 新密码
+     * @return
+     */
+    @RequestMapping(value = "/reset-password")//,@RequestBody method = RequestMethod.POST
+    @ResponseBody
+    @Transactional(rollbackFor = Exception.class)
+    public MessageResult forgetPassword(
+        @Valid  MobileRegisterByEmail mobileRegisterByEmail,
+        BindingResult bindingResult,HttpServletRequest request) throws Exception {
+    	log.info("reset-password start");
+    	MessageResult result = BindingResultUtil.validate(bindingResult);
+   
+    	if (result != null) {
+    		return result;
+    	}
+    	
+    	String email = mobileRegisterByEmail.getEmail();
+    	String password = mobileRegisterByEmail.getPassword();
+    	
+    	Member member = memberService.findByEmail(email);
+       
+        isTrue(password.length() >= 6 && password.length() <= 20, localeMessageSourceService.getMessage("PASSWORD_LENGTH_ILLEGAL"));
+        notNull(member, localeMessageSourceService.getMessage("MEMBER_NOT_EXISTS"));
+        
+        //生成密码
+        String newPassword = Md5.md5Digest(password + member.getSalt()).toLowerCase();
+        member.setPassword(newPassword);
+        return success();
+    }
 }

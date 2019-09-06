@@ -5,10 +5,13 @@ import static org.springframework.util.Assert.isTrue;
 import static org.springframework.util.Assert.notNull;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,6 +32,7 @@ import ai.turbochain.ipex.service.MemberService;
 import ai.turbochain.ipex.service.MemberWalletService;
 import ai.turbochain.ipex.util.Md5;
 import ai.turbochain.ipex.util.MessageResult;
+import ai.turbochain.ipex.util.RSAUtil;
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
@@ -52,7 +56,11 @@ public class MobileExangeAssetController {
     private MemberLevelFeeService memberLevelFeeService;
     @Autowired
     private MemberExclusiveFeeService memberExclusiveFeeService;
-    
+    @Value("${rsa.certs.path}")
+    private String certsPath;
+	@Value("${rsa.keystore.path}")
+    private String keystorePath;
+	
     boolean checkJyPassword(Member memberFrom, String jyPassword) throws Exception {
        
     	hasText(jyPassword, messageSourceService.getMessage("MISSING_JYPASSWORD"));
@@ -69,7 +77,7 @@ public class MobileExangeAssetController {
     /**
      * 快速支付
      * @param user
-     * @return
+     * @return //sign = RSAUtil.generateSignature(map,certsPath);
      * @throws Exception
      */
     @RequestMapping("/quick-pay")
@@ -78,11 +86,28 @@ public class MobileExangeAssetController {
     		@RequestParam(value = "coinId", required = true) String coinId, 
     		@RequestParam(value = "payerEmail", required = true) String payerEmail,
     		@RequestParam(value = "payeeEmail", required = true) String payeeEmail,
-    		@RequestParam(value = "amount", required = true)  BigDecimal amount) throws Exception {
+    		@RequestParam(value = "amount", required = true)  BigDecimal amount,
+    		@RequestParam(value = "sign", required = false) byte[] sign) throws Exception {
             
     	MessageResult messageResult = null;
     	
     	try {
+    		if (sign!=null) {
+    			Map<String, Object> map = new HashMap<String, Object>();
+        		
+        		map.put("coinId",coinId);
+        		map.put("payerEmail",payerEmail);
+        		map.put("payeeEmail",payeeEmail);
+        		map.put("amount",amount);
+        		
+        		String str = RSAUtil.keySort(map);
+        		
+        		// 验签
+        		if(!str.equals(RSAUtil.decrypt(sign,keystorePath))) {
+            		return new MessageResult(RESULT_FAIL_CODE, "签名验证失败！");
+        		}
+    		}
+    		
     		if (payerEmail.equals(payeeEmail)) {
                 return new MessageResult(RESULT_FAIL_CODE, "不能转账给本人");
             }

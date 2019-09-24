@@ -150,7 +150,7 @@ public class MobileExangeAssetController {
         	}
         	
         	// 资金划转
-        	messageResult = exangeService.transferToOther(coinId, amount,fee, memberFrom.getId(), memberTo.getId());
+        	messageResult = exangeService.transferToOtherForModelChain(coinId, amount,fee, memberFrom.getId(), memberTo.getId());
     	
     	} catch (Exception e) {
     		e.printStackTrace();

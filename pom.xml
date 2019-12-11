@@ -4,7 +4,7 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>ipex-ucenter-api</artifactId>
- 
+  
     <parent>
         <groupId>ai.turbochain.ipex</groupId>
         <artifactId>ipex-parent</artifactId>

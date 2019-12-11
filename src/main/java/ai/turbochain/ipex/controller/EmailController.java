@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Resource;
@@ -64,6 +65,8 @@ public class EmailController {
 	private LocaleMessageSourceService localeMessageSourceService;
 	@Autowired
 	private MemberService memberService;
+	@Autowired
+	private ExecutorService executorService;
 
 	/**
 	 * 注册验证码发送
@@ -85,8 +88,15 @@ public class EmailController {
 			String msg = localeMessageSourceService.getMessage("EMAIL_ALREADY_BOUND");
 			result = MessageResult.exist(msg);
 		} else {
-			String subjcet = "[IPEX]邮件验证码";
-			result = sendEmailCodeMethod(SysConstant.EMAIL_REG_CODE_PREFIX, email, subjcet);
+			
+			executorService.execute(new Runnable() {
+	            public void run() {
+	            	String subjcet = "[IPEX]邮件验证码";
+	    			sendEmailCodeMethod(SysConstant.EMAIL_REG_CODE_PREFIX, email, subjcet);
+	            }
+	        });
+			
+			result = success(localeMessageSourceService.getMessage("SENT_SUCCESS_TEN"));
 		}
 
 		return result;

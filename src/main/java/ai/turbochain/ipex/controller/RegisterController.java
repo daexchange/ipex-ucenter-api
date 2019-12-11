@@ -675,6 +675,7 @@ public class RegisterController {
         if (member1 != null) {
             member1.setPromotionCode(String.format(userNameFormat, member1.getId()) + GeneratorUtil.getNonceString(2));
             memberEvent.onRegisterSuccess(member1, loginByEmail.getPromotion());
+            
             return success(localeMessageSourceService.getMessage("REGISTRATION_SUCCESS"));
         } else {
             return error(localeMessageSourceService.getMessage("REGISTRATION_FAILED"));

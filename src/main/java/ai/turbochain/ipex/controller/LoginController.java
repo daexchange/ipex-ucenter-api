@@ -183,6 +183,11 @@ public class LoginController extends BaseController {
      */
     private LoginInfo getLoginInfo(String username, String password, String ip, HttpServletRequest request) throws Exception {
         Member member = memberService.login(username, password);
+       
+        if (member.getOrigin()!=null) {
+        	return null;
+        }
+        
         memberEvent.onLoginSuccess(member, ip);
         
         // 处理登录成功Session

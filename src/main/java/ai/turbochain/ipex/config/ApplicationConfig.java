@@ -72,15 +72,15 @@ public class ApplicationConfig  extends WebMvcConfigurerAdapter {
      */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(new MemberInterceptor())
+        registry.addInterceptor(getMemberInterceptor())
                 .addPathPatterns("/**")
                 .excludePathPatterns("/register/**", "/mobile/code", "/email/code","/email/login/code","/email/reset/code","/getKaptchaImage","/login","/check","/check/login","/start/captcha","/support/country",
                         "/ancillary/**","/announcement/**","/mobile/reset/code","/reset/email/code",
                         "/mobile-register/email","/mobile-register/reset-password","/mobile-exange/asset/wallet/**","/mobile-exange/asset/quick-pay",
                         "/reset/login/password","/vote/info","/coin/supported","/financial/items/**","/coin/guess/index","/coin/guess/record",
-                       "/hard-id/register","/hard-id/reset-password",
+                       "/hard-id/saveNone","/hard-id/reset-password",
                        "/coin/guess/detail","/coin/cny-rate/**","/coin/guess/type");
-                        
+                 
         super.addInterceptors(registry);
     }
 
@@ -98,5 +98,15 @@ public class ApplicationConfig  extends WebMvcConfigurerAdapter {
         bean.setOrder(0);
         return bean;
     }
+    
+    /**
+	 * 这里需要先将限流拦截器入住，不然无法获取到拦截器中的redistemplate
+	 * @return
+	 */
+	@Bean
+	public MemberInterceptor getMemberInterceptor() {
+		return new MemberInterceptor();
+	}
+ 
 
 }

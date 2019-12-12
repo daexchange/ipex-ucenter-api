@@ -15,12 +15,12 @@ import lombok.Data;
 @Data
 public class HardIdRegister {
 
-    @NotBlank(message = "{LoginByEmail.email.null}")
+   // @NotBlank(message = "{LoginByEmail.email.null}")
     @Email(message = "{LoginByEmail.email.format}")
     private String email;
 
    // @NotBlank(message = "{LoginByEmail.password.null}")
-    @Length(min = 6, max = 20, message = "{LoginByEmail.password.length}")
+   // @Length(min = 6, max = 20, message = "{LoginByEmail.password.length}")
     private String password;
 
   //  @NotBlank(message = "{LoginByEmail.username.null}")

@@ -6,7 +6,9 @@ import static org.springframework.util.Assert.isTrue;
 import static org.springframework.util.Assert.notNull;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 import javax.annotation.Resource;
@@ -19,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -75,6 +78,114 @@ public class HardIdRegisterController {
      * @param bindingResult
      * @throws Exception
      */
+	//@PostMapping(value ="/saveNone")
+	@RequestMapping(value ="/saveNone")
+    @Transactional(rollbackFor = Exception.class)
+    public MessageResult save(HttpServletRequest request) throws Exception {
+        
+		// TODO 
+		log.info("register start");
+		
+		String ip = request.getHeader("X-Real-IP");
+        
+        log.info("request ip:"+ip);
+		
+		HardIdRegister hardIdRegister = new HardIdRegister();
+		
+		//HardId不需要密码
+		hardIdRegister.setPassword("123456");
+				
+        Member member = memberService.save(getMember(hardIdRegister));
+        
+        Long memberId = member.getId();
+       
+        log.info("register end");
+       
+        if (member != null) {
+        	Map<String,Long> map = new HashMap<String,Long>();
+        	
+            map.put("memberId", memberId);
+        	
+            afterRegister(memberId);
+        	
+            MessageResult mr = new MessageResult();
+            
+            mr.setCode(0);
+            mr.setMessage(localeMessageSourceService.getMessage("REGISTRATION_SUCCESS"));
+            mr.setData(map);
+            
+            return mr;
+        } else {
+            return error(localeMessageSourceService.getMessage("REGISTRATION_FAILED"));
+        } 
+    }
+	
+	
+	/**
+     * 绑定手机或邮箱
+     *
+     * @param HardIdRegister
+     * @param bindingResult
+     * @throws Exception
+     */
+	//@PostMapping(value ="/{memberId}/bind")
+	@RequestMapping(value ="/{memberId}/bind")
+    public MessageResult register(@PathVariable Long memberId,
+    		@Valid HardIdRegister hardIdRegister,
+            BindingResult bindingResult,HttpServletRequest request) throws Exception {
+        
+		log.info("bind start");
+		
+		//HardId不需要密码
+		hardIdRegister.setPassword("123456");
+		
+        MessageResult result = BindingResultUtil.validate(bindingResult);
+       
+        if (result != null) {
+            return result;
+        }
+        
+        String ip = request.getHeader("X-Real-IP");
+        
+        log.info("request ip:"+ip);
+        
+        String email = hardIdRegister.getEmail();
+        String mobilePhone = hardIdRegister.getMobilePhone();
+        
+        if (StringUtils.isBlank(mobilePhone)&&StringUtils.isBlank(email)) {
+        	return error("请输入绑定手机号和邮箱地址");
+        } else {
+        	Member memberOld = (Member) memberService.findOne(memberId);
+        	
+        	if (memberOld==null) { // 新增
+        		return error(localeMessageSourceService.getMessage("REGISTRATION_FAILED"));
+        	} else {
+        		if (MemberRegisterOriginEnum.HARDID.getSourceType().intValue()!=memberOld.getOrigin().intValue()) {
+                	return error("当前邮箱或手机号已注册");
+                }
+        		
+        		memberOld.setEmail(hardIdRegister.getEmail());
+        		memberOld.setMobilePhone(hardIdRegister.getMobilePhone());
+        	    
+        		try {
+        			memberService.save(memberOld);
+        		}catch(Exception e) {
+        			e.printStackTrace();
+        			return error("请手机号或邮箱地址已被绑定");
+        		}
+                return success("绑定成功");
+        	}
+        }
+    }
+	
+	
+	/**
+     * 注册
+     *
+     * @param HardIdRegister
+     * @param bindingResult
+     * @throws Exception
+     */
 	@PostMapping(value ="/register")
 	//@RequestMapping(value ="/register")
     @Transactional(rollbackFor = Exception.class)
@@ -82,7 +193,10 @@ public class HardIdRegisterController {
             BindingResult bindingResult,HttpServletRequest request) throws Exception {
         
 		log.info("register start");
-    	
+		
+		//HardId不需要密码
+		hardIdRegister.setPassword("123456");
+		
         MessageResult result = BindingResultUtil.validate(bindingResult);
        
         if (result != null) {

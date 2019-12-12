@@ -5,7 +5,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
+
+import ai.turbochain.ipex.filter.LogFilter;
+
 
 /**
  * @author GS
@@ -19,7 +23,14 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @EnableDiscoveryClient
 public class UcenterApplication {
+	
     public static void main(String[] args) {
         SpringApplication.run(UcenterApplication.class, args);
     }
+    
+	@Bean(name = "LogFilter")
+	public LogFilter getLogFilter(){
+		return new LogFilter();
+	}
+	
 }

@@ -19,16 +19,11 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
-import org.jboss.logging.Param;
-import org.junit.runners.Parameterized.Parameter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -58,7 +53,6 @@ import ai.turbochain.ipex.entity.Member;
 import ai.turbochain.ipex.entity.MemberAccount;
 import ai.turbochain.ipex.entity.MemberApplication;
 import ai.turbochain.ipex.entity.MemberLegalCurrencyWallet;
-import ai.turbochain.ipex.entity.MemberSecurity;
 import ai.turbochain.ipex.entity.QMemberApplication;
 import ai.turbochain.ipex.entity.WechatPay;
 import ai.turbochain.ipex.entity.transform.AuthMember;
@@ -343,6 +337,7 @@ public class HardIdTransactionController {
     @RequestMapping("/bind/wechat")
     @Transactional(rollbackFor = Exception.class)
     public MessageResult bindWechat(@Valid BindWechat bindWechat, BindingResult bindingResult) throws Exception {
+    	
     	Member member1 = new Member();
     	member1.setId(memberIdAll);
     	AuthMember user = AuthMember.toAuthMember(member1);

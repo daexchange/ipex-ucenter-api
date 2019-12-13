@@ -7,6 +7,7 @@ import static ai.turbochain.ipex.constant.CertifiedBusinessStatus.CANCEL_AUTH;
 import static ai.turbochain.ipex.constant.CertifiedBusinessStatus.RETURN_FAILED;
 import static ai.turbochain.ipex.constant.CertifiedBusinessStatus.RETURN_SUCCESS;
 import static ai.turbochain.ipex.constant.CertifiedBusinessStatus.VERIFIED;
+import static ai.turbochain.ipex.constant.SysConstant.API_HARD_ID_MEMBER;
 import static ai.turbochain.ipex.constant.SysConstant.SESSION_MEMBER;
 import static org.springframework.util.Assert.hasText;
 import static org.springframework.util.Assert.isTrue;
@@ -114,14 +115,12 @@ public class HardIdTransactionController {
      */
     @RequestMapping("/password")
     @Transactional(rollbackFor = Exception.class)
-    public MessageResult approveTransaction(String jyPassword) throws Exception {
-        // TODO token 验证
-    	Long memberId = 115l;
+    public MessageResult approveTransaction(String jyPassword, @SessionAttribute(API_HARD_ID_MEMBER) AuthMember user) throws Exception {
     	
     	hasText(jyPassword, msService.getMessage("MISSING_JY_PASSWORD"));
         isTrue(jyPassword.length() >= 6 && jyPassword.length() <= 20, msService.getMessage("JY_PASSWORD_LENGTH_ILLEGAL"));
        
-        Member member = memberService.findOne(memberId);
+        Member member = memberService.findOne(user.getId());
         Assert.isNull(member.getJyPassword(), msService.getMessage("REPEAT_SETTING"));
         //生成密码
         String jyPass = Md5.md5Digest(jyPassword + member.getSalt()).toLowerCase();
@@ -140,20 +139,17 @@ public class HardIdTransactionController {
      */
     @RequestMapping("/update/password")
     @Transactional(rollbackFor = Exception.class)
-    public MessageResult updateTransaction(String oldPassword, String newPassword) throws Exception {
-      //, @SessionAttribute(SESSION_MEMBER) AuthMember user
-    	Long memberId = 115l;
-    	
+    public MessageResult updateTransaction(String oldPassword, String newPassword, @SessionAttribute(API_HARD_ID_MEMBER) AuthMember user) throws Exception {
     	hasText(oldPassword, msService.getMessage("MISSING_OLD_JY_PASSWORD"));
         hasText(newPassword, msService.getMessage("MISSING_NEW_JY_PASSWORD"));
         isTrue(newPassword.length() >= 6 && newPassword.length() <= 20, msService.getMessage("JY_PASSWORD_LENGTH_ILLEGAL"));
-        Member member = memberService.findOne(memberId);
+        Member member = memberService.findOne(user.getId());
         isTrue(Md5.md5Digest(oldPassword + member.getSalt()).toLowerCase().equals(member.getJyPassword()), msService.getMessage("ERROR_JYPASSWORD"));
         member.setJyPassword(Md5.md5Digest(newPassword + member.getSalt()).toLowerCase());
         return MessageResult.success(msService.getMessage("SETTING_JY_PASSWORD"));
     }
 
-    Long memberIdAll = 115l;  
+    
     /**
      * 实名认证
      *
@@ -170,8 +166,7 @@ public class HardIdTransactionController {
     		String idCard, 
     		String idCardFront, 
     		String idCardBack, 
-            String handHeldIdCard) {
-    	Long memberId = memberIdAll;                          
+            String handHeldIdCard, @SessionAttribute(API_HARD_ID_MEMBER) AuthMember user) {
         hasText(realName, msService.getMessage("MISSING_REAL_NAME"));
         
         hasText(idCard, msService.getMessage("MISSING_ID_CARD"));
@@ -179,7 +174,7 @@ public class HardIdTransactionController {
         hasText(idCardBack, msService.getMessage("MISSING_ID_CARD_BACK"));
         hasText(handHeldIdCard, msService.getMessage("MISSING_ID_CARD_HAND"));
         
-        Member member = memberService.findOne(memberId);
+        Member member = memberService.findOne(user.getId());
         
         //  修改所在国家
         if (org.apache.commons.lang3.StringUtils.isNotBlank(country)) {
@@ -228,11 +223,7 @@ public class HardIdTransactionController {
      */
     @RequestMapping("/bind/bank")
     @Transactional(rollbackFor = Exception.class)
-    public MessageResult bindBank(@Valid BindBank bindBank, BindingResult bindingResult) throws Exception {
-    	Member member1 = new Member();
-    	member1.setId(memberIdAll);
-    	AuthMember user = AuthMember.toAuthMember(member1);
-    	
+    public MessageResult bindBank(@Valid BindBank bindBank, BindingResult bindingResult, @SessionAttribute(API_HARD_ID_MEMBER) AuthMember user) throws Exception {
     	Member member = memberService.findOne(user.getId());
         isTrue(member.getBankInfo() == null, msService.getMessage("REPEAT_SETTING"));
         return doBank(bindBank, bindingResult, user);
@@ -264,11 +255,7 @@ public class HardIdTransactionController {
      */
     @RequestMapping("/update/bank")
     @Transactional(rollbackFor = Exception.class)
-    public MessageResult updateBank(@Valid BindBank bindBank, BindingResult bindingResult) throws Exception {
-    	Member member1 = new Member();
-    	member1.setId(memberIdAll);
-    	AuthMember user = AuthMember.toAuthMember(member1);
-    	
+    public MessageResult updateBank(@Valid BindBank bindBank, BindingResult bindingResult, @SessionAttribute(API_HARD_ID_MEMBER) AuthMember user) throws Exception {
     	return doBank(bindBank, bindingResult, user);
     }
 
@@ -283,11 +270,7 @@ public class HardIdTransactionController {
      */
     @RequestMapping("/bind/ali")
     @Transactional(rollbackFor = Exception.class)
-    public MessageResult bindAli(@Valid BindAli bindAli, BindingResult bindingResult) throws Exception {
-    	Member member1 = new Member();
-    	member1.setId(memberIdAll);
-    	AuthMember user = AuthMember.toAuthMember(member1);
-    	
+    public MessageResult bindAli(@Valid BindAli bindAli, BindingResult bindingResult, @SessionAttribute(API_HARD_ID_MEMBER) AuthMember user) throws Exception {
     	Member member = memberService.findOne(user.getId());
         isTrue(member.getAlipay() == null, msService.getMessage("REPEAT_SETTING"));
         return doAli(bindAli, bindingResult, user);
@@ -317,11 +300,7 @@ public class HardIdTransactionController {
      */
     @RequestMapping("/update/ali")
     @Transactional(rollbackFor = Exception.class)
-    public MessageResult updateAli(@Valid BindAli bindAli, BindingResult bindingResult) throws Exception {
-    	Member member1 = new Member();
-    	member1.setId(memberIdAll);
-    	AuthMember user = AuthMember.toAuthMember(member1);
-    	
+    public MessageResult updateAli(@Valid BindAli bindAli, BindingResult bindingResult, @SessionAttribute(API_HARD_ID_MEMBER) AuthMember user) throws Exception {
     	return doAli(bindAli, bindingResult, user);
     }
 
@@ -336,12 +315,7 @@ public class HardIdTransactionController {
      */
     @RequestMapping("/bind/wechat")
     @Transactional(rollbackFor = Exception.class)
-    public MessageResult bindWechat(@Valid BindWechat bindWechat, BindingResult bindingResult) throws Exception {
-    	
-    	Member member1 = new Member();
-    	member1.setId(memberIdAll);
-    	AuthMember user = AuthMember.toAuthMember(member1);
-    	
+    public MessageResult bindWechat(@Valid BindWechat bindWechat, BindingResult bindingResult,@SessionAttribute(API_HARD_ID_MEMBER) AuthMember user) throws Exception {
     	Member member = memberService.findOne(user.getId());
         isTrue(member.getWechatPay() == null, msService.getMessage("REPEAT_SETTING"));
         return doWechat(bindWechat, bindingResult, user);
@@ -371,11 +345,7 @@ public class HardIdTransactionController {
      */
     @RequestMapping("/update/wechat")
     @Transactional(rollbackFor = Exception.class)
-    public MessageResult updateWechat(@Valid BindWechat bindWechat, BindingResult bindingResult) throws Exception {
-    	Member member1 = new Member();
-    	member1.setId(memberIdAll);
-    	AuthMember user = AuthMember.toAuthMember(member1);
-    	
+    public MessageResult updateWechat(@Valid BindWechat bindWechat, BindingResult bindingResult, @SessionAttribute(API_HARD_ID_MEMBER) AuthMember user) throws Exception {
     	return doWechat(bindWechat, bindingResult, user);
     }
     

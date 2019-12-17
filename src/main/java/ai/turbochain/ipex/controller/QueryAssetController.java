@@ -1,18 +1,12 @@
 package ai.turbochain.ipex.controller;
 
-import ai.turbochain.ipex.constant.TransactionType;
-import ai.turbochain.ipex.entity.MemberLegalCurrencyWallet;
-import ai.turbochain.ipex.entity.OtcCoin;
-import ai.turbochain.ipex.entity.RespWallet;
-import ai.turbochain.ipex.entity.transform.AuthMember;
-import ai.turbochain.ipex.service.MemberLegalCurrencyWalletService;
-import ai.turbochain.ipex.service.MemberTransactionService;
-import ai.turbochain.ipex.service.OtcCoinService;
-import ai.turbochain.ipex.system.CoinExchangeFactory;
-import ai.turbochain.ipex.util.MessageResult;
-import com.netflix.discovery.converters.Auto;
-import com.sparkframework.lang.Convert;
-import lombok.extern.slf4j.Slf4j;
+import static ai.turbochain.ipex.constant.SysConstant.API_HARD_ID_MEMBER;
+import static ai.turbochain.ipex.util.MessageResult.error;
+
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.catalina.servlet4preview.http.HttpServletRequest;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,12 +15,21 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.SessionAttribute;
 
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.List;
+import com.sparkframework.lang.Convert;
 
-import static ai.turbochain.ipex.constant.SysConstant.API_HARD_ID_MEMBER;
-import static ai.turbochain.ipex.constant.SysConstant.SESSION_MEMBER;
+import ai.turbochain.ipex.constant.TransactionType;
+import ai.turbochain.ipex.entity.MemberLegalCurrencyWallet;
+import ai.turbochain.ipex.entity.MemberWallet;
+import ai.turbochain.ipex.entity.OtcCoin;
+import ai.turbochain.ipex.entity.RespWallet;
+import ai.turbochain.ipex.entity.transform.AuthMember;
+import ai.turbochain.ipex.service.MemberLegalCurrencyWalletService;
+import ai.turbochain.ipex.service.MemberTransactionService;
+import ai.turbochain.ipex.service.MemberWalletService;
+import ai.turbochain.ipex.service.OtcCoinService;
+import ai.turbochain.ipex.system.CoinExchangeFactory;
+import ai.turbochain.ipex.util.MessageResult;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author 未央
@@ -48,6 +51,8 @@ public class QueryAssetController {
 
     @Autowired
     private CoinExchangeFactory coinExchangeFactory;
+    @Autowired
+    private MemberWalletService memberWalletService;
 
     /**
      * 查询所有记录
@@ -104,4 +109,25 @@ public class QueryAssetController {
         return mr;
     }
 
+    
+    /**
+     *  地址信息
+     *
+     * @param member
+     * @return
+     */
+    @RequestMapping("/address")
+    public MessageResult getAddress(@SessionAttribute(API_HARD_ID_MEMBER) AuthMember member,String coinUnit) {
+        if (StringUtils.isBlank(coinUnit)) {
+    	   return error("请输入币种单位");
+        }
+        MemberWallet wallet = memberWalletService.findByCoinUnitAndMemberId(coinUnit, member.getId());
+       
+        if (wallet==null) {
+        	return error("请检查钱包是否正常");
+        }
+        MessageResult mr = MessageResult.success("success");
+        mr.setData(wallet.getAddress());
+        return mr;
+    }
 }

@@ -362,11 +362,13 @@ public class HardIdRegisterController {
 			wallet.setMemberId(memberId);
 			wallet.setBalance(new BigDecimal(0));
 			wallet.setFrozenBalance(new BigDecimal(0));
-			if (coin.getIsToken().isIs() == true && coin.getChainName().equals("PWR")
-					&& StringUtils.isNotBlank(pwrAddress) == true) {
+			if ((coin.getIsToken().isIs() == true && coin.getChainName().equals("PWR")
+					&& StringUtils.isNotBlank(pwrAddress) == true)
+					|| (coin.getUnit().equals("PWR") && StringUtils.isNotBlank(pwrAddress) == true)) {
 				wallet.setAddress(pwrAddress);
-			} else if (coin.getIsToken().isIs() == true && coin.getChainName().equals("ETH")
-					&& StringUtils.isNotBlank(ethAddress) == true) {
+			} else if ((coin.getIsToken().isIs() == true && coin.getChainName().equals("ETH")
+					&& StringUtils.isNotBlank(ethAddress) == true)
+					|| (coin.getUnit().equals("ETH") && StringUtils.isNotBlank(ethAddress) == true)) {
 				wallet.setAddress(ethAddress);
 			} else {
 				String serviceName = "";
@@ -388,10 +390,12 @@ public class HardIdRegisterController {
 								// 返回地址成功，调用持久化
 								String address = (String) mr.getData();
 								wallet.setAddress(address);
-								if (coin.getIsToken().isIs() == true && coin.getChainName().equals("ETH") == true) {
+								if ((coin.getIsToken().isIs() == true && coin.getChainName().equals("ETH") == true)
+										|| coin.getUnit().equals("ETH") == true) {
 									ethAddress = address;
-								} else if (coin.getIsToken().isIs() == true
-										&& coin.getChainName().equals("PWR") == true) {
+								} else if ((coin.getIsToken().isIs() == true
+										&& coin.getChainName().equals("PWR") == true)
+										|| coin.getUnit().equals("PWR") == true) {
 									pwrAddress = address;
 								}
 							}

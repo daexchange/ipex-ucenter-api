@@ -25,6 +25,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static ai.turbochain.ipex.constant.SysConstant.API_HARD_ID_MEMBER;
 import static ai.turbochain.ipex.constant.SysConstant.SESSION_MEMBER;
 
 /**
@@ -57,7 +58,7 @@ public class QueryAssetController {
      * @return
      */
     @RequestMapping("transaction/all")
-    public MessageResult findTransaction(@SessionAttribute(SESSION_MEMBER) AuthMember member, HttpServletRequest request, int pageNo, int pageSize,
+    public MessageResult findTransaction(@SessionAttribute(API_HARD_ID_MEMBER) AuthMember member, HttpServletRequest request, int pageNo, int pageSize,
                                          @RequestParam(value = "startTime",required = false)  String startTime,
                                          @RequestParam(value = "endTime",required = false)  String endTime,
                                          @RequestParam(value = "symbol",required = false)  String symbol,
@@ -80,7 +81,7 @@ public class QueryAssetController {
      * @return
      */
     @RequestMapping("/wallet")
-    public MessageResult findWallet(@SessionAttribute(SESSION_MEMBER) AuthMember member) {
+    public MessageResult findWallet(@SessionAttribute(API_HARD_ID_MEMBER) AuthMember member) {
         List<MemberLegalCurrencyWallet> wallets = memberLegalCurrencyWalletService.findAllByMemberId(member.getId());
         List<RespWallet> respWalletList = new ArrayList<>();
         wallets.forEach(wallet -> {

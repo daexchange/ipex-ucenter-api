@@ -15,11 +15,14 @@ import static org.springframework.util.Assert.notNull;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
@@ -788,9 +791,21 @@ public class HardIdTransactionController {
     @Transactional(rollbackFor = Exception.class)
     public MessageResult userInfor(@SessionAttribute(API_HARD_ID_MEMBER) AuthMember user) {
         Member member = memberService.findOne(user.getId());
+        if (member==null) {
+        	return  MessageResult.error("会员不存在");
+        }
+        Map<String,Object> data = new HashMap<String,Object>();
+       
+        data.put("member",member);
+        
+        if (StringUtils.isBlank(member.getJyPassword())) {
+        	data.put("isSetJyPassWord",0);
+        } else {
+        	data.put("isSetJyPassWord",1);
+        }
         
         MessageResult result = MessageResult.success();
-        result.setData(member);
+        result.setData(data);
         return result;
     }
 }

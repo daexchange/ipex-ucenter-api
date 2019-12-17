@@ -19,8 +19,6 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
-import org.jboss.logging.Param;
-import org.junit.runners.Parameterized.Parameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -669,7 +667,8 @@ public class ApproveController {
             if(!flag){
                 return MessageResult.error("business auth deposit is not found");
             }
-            MemberLegalCurrencyWallet memberLegalCurrencyWallet = memberLegalCurrencyWalletService.findByCoinUnitAndMemberId(businessAuthDeposit.getCoin().getUnit(),member.getId());
+            MemberLegalCurrencyWallet memberLegalCurrencyWallet = memberLegalCurrencyWalletService.findByOtcCoinUnitAndMemberId(businessAuthDeposit.getCoin().getUnit(),member.getId());
+           
             if(memberLegalCurrencyWallet.getBalance().compareTo(businessAuthDeposit.getAmount())<0){
                 return MessageResult.error("您的余额不足");
             }

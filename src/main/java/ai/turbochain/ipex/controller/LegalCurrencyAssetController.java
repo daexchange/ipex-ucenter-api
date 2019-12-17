@@ -9,14 +9,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.SessionAttribute;
 
 import ai.turbochain.ipex.constant.AccountType;
-import ai.turbochain.ipex.constant.CertifiedBusinessStatus;
 import ai.turbochain.ipex.constant.TransactionType;
 import ai.turbochain.ipex.entity.Member;
 import ai.turbochain.ipex.entity.MemberLegalCurrencyWallet;
@@ -56,18 +54,18 @@ public class LegalCurrencyAssetController {
      */
     @RequestMapping("/wallet")
     public MessageResult findWallet(@SessionAttribute(SESSION_MEMBER) AuthMember member) {
-        List<MemberLegalCurrencyWallet> wallets = memberLegalCurrencyWalletService.findAllByMemberId(member.getId());
-        wallets.forEach(wallet -> {
-            CoinExchangeFactory.ExchangeRate rate = coinExchangeFactory.get(wallet.getCoin().getUnit());
+        List<MemberLegalCurrencyWallet> legalCurrencyWallets = memberLegalCurrencyWalletService.findAllByMemberId(member.getId());
+        legalCurrencyWallets.forEach(wallet -> {
+            CoinExchangeFactory.ExchangeRate rate = coinExchangeFactory.get(wallet.getOtcCoin().getUnit());
             if (rate != null) {
-                wallet.getCoin().setUsdRate(rate.getUsdRate().doubleValue());
-                wallet.getCoin().setCnyRate(rate.getCnyRate().doubleValue());
+               // wallet.getOtcCoin().setUsdRate(rate.getUsdRate().doubleValue());
+             //   wallet.getCoin().setCnyRate(rate.getCnyRate().doubleValue());
             } else {
-                log.info("unit = {} , rate = null ", wallet.getCoin().getUnit());
+                log.info("unit = {} , rate = null ", wallet.getOtcCoin().getUnit());
             }
         });
         MessageResult mr = MessageResult.success("success");
-        mr.setData(wallets);
+        mr.setData(legalCurrencyWallets);
         return mr;
     }
 
@@ -92,7 +90,7 @@ public class LegalCurrencyAssetController {
     @RequestMapping("wallet/{symbol}")
     public MessageResult findWalletBySymbol(@SessionAttribute(SESSION_MEMBER) AuthMember member, @PathVariable String symbol) {
         MessageResult mr = MessageResult.success("success");
-        mr.setData(memberLegalCurrencyWalletService.findByCoinUnitAndMemberId(symbol, member.getId()));
+        mr.setData(memberLegalCurrencyWalletService.findByOtcCoinUnitAndMemberId(symbol, member.getId()));
         return mr;
     }
    

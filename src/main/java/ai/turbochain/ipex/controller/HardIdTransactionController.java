@@ -350,6 +350,30 @@ public class HardIdTransactionController {
     }
     
     
+
+    /**
+     * 查询实名认证情况
+     *
+     * @param user
+     * @return
+     */
+    @PostMapping("/real/detail")
+    @Transactional(rollbackFor = Exception.class)
+    public MessageResult realNameApproveDetail(@SessionAttribute(API_HARD_ID_MEMBER) AuthMember user) {
+        Member member = memberService.findOne(user.getId());
+        List<Predicate> predicateList = new ArrayList<>();
+        predicateList.add(QMemberApplication.memberApplication.member.eq(member));
+        PageResult<MemberApplication> memberApplicationPageResult = memberApplicationService.query(predicateList, null, null);
+        MemberApplication memberApplication = new MemberApplication();
+        if (memberApplicationPageResult != null && memberApplicationPageResult.getContent() != null
+                && memberApplicationPageResult.getContent().size() > 0) {
+            memberApplication = memberApplicationPageResult.getContent().get(0);
+        }
+        MessageResult result = MessageResult.success();
+        result.setData(memberApplication);
+        return result;
+    }
+    
     
     
     /**
@@ -499,31 +523,6 @@ public class HardIdTransactionController {
         }
     }
 
-    
-
-
-    /**
-     * 查询实名认证情况
-     *
-     * @param user
-     * @return
-     */
-    @PostMapping("/real/detail")
-    @Transactional(rollbackFor = Exception.class)
-    public MessageResult realNameApproveDetail(@SessionAttribute(SESSION_MEMBER) AuthMember user) {
-        Member member = memberService.findOne(user.getId());
-        List<Predicate> predicateList = new ArrayList<>();
-        predicateList.add(QMemberApplication.memberApplication.member.eq(member));
-        PageResult<MemberApplication> memberApplicationPageResult = memberApplicationService.query(predicateList, null, null);
-        MemberApplication memberApplication = new MemberApplication();
-        if (memberApplicationPageResult != null && memberApplicationPageResult.getContent() != null
-                && memberApplicationPageResult.getContent().size() > 0) {
-            memberApplication = memberApplicationPageResult.getContent().get(0);
-        }
-        MessageResult result = MessageResult.success();
-        result.setData(memberApplication);
-        return result;
-    }
 
     /**
      * 账户设置
@@ -629,7 +628,7 @@ public class HardIdTransactionController {
             if(!flag){
                 return MessageResult.error("business auth deposit is not found");
             }
-            MemberLegalCurrencyWallet memberLegalCurrencyWallet = memberLegalCurrencyWalletService.findByCoinUnitAndMemberId(businessAuthDeposit.getCoin().getUnit(),member.getId());
+            MemberLegalCurrencyWallet memberLegalCurrencyWallet = null;//memberLegalCurrencyWalletService.findByCoinUnitAndMemberId(businessAuthDeposit.getCoin().getUnit(),member.getId());
             if(memberLegalCurrencyWallet.getBalance().compareTo(businessAuthDeposit.getAmount())<0){
                 return MessageResult.error("您的余额不足");
             }
@@ -776,5 +775,22 @@ public class HardIdTransactionController {
     	member.setUsername(userName);;
        
         return MessageResult.success();
+    }
+    
+    
+    /**
+     * 查询实名认证情况
+     *
+     * @param user
+     * @return
+     */
+    @PostMapping("/user-infor")
+    @Transactional(rollbackFor = Exception.class)
+    public MessageResult userInfor(@SessionAttribute(API_HARD_ID_MEMBER) AuthMember user) {
+        Member member = memberService.findOne(user.getId());
+        
+        MessageResult result = MessageResult.success();
+        result.setData(member);
+        return result;
     }
 }

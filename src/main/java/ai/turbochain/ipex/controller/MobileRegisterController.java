@@ -17,7 +17,6 @@ import org.apache.shiro.util.ByteSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +31,6 @@ import org.springframework.web.client.RestTemplate;
 import ai.turbochain.ipex.constant.BooleanEnum;
 import ai.turbochain.ipex.constant.CommonStatus;
 import ai.turbochain.ipex.constant.MemberLevelEnum;
-import ai.turbochain.ipex.constant.SysConstant;
 import ai.turbochain.ipex.entity.Coin;
 import ai.turbochain.ipex.entity.Country;
 import ai.turbochain.ipex.entity.Location;
@@ -40,11 +38,13 @@ import ai.turbochain.ipex.entity.Member;
 import ai.turbochain.ipex.entity.MemberLegalCurrencyWallet;
 import ai.turbochain.ipex.entity.MemberWallet;
 import ai.turbochain.ipex.entity.MobileRegisterByEmail;
+import ai.turbochain.ipex.entity.OtcCoin;
 import ai.turbochain.ipex.service.CoinService;
 import ai.turbochain.ipex.service.LocaleMessageSourceService;
 import ai.turbochain.ipex.service.MemberLegalCurrencyWalletService;
 import ai.turbochain.ipex.service.MemberService;
 import ai.turbochain.ipex.service.MemberWalletService;
+import ai.turbochain.ipex.service.OtcCoinService;
 import ai.turbochain.ipex.util.BindingResultUtil;
 import ai.turbochain.ipex.util.IdWorkByTwitter;
 import ai.turbochain.ipex.util.Md5;
@@ -68,6 +68,8 @@ public class MobileRegisterController {
 	private ExecutorService executorService;
 	@Autowired
 	private CoinService coinService;
+	@Autowired
+	private OtcCoinService otcCoinService;
 	@Autowired
 	private RestTemplate restTemplate;
 	@Autowired
@@ -214,10 +216,13 @@ public class MobileRegisterController {
             
 			// 保存
             memberWalletService.save(wallet);
-
+		}
+		
+		List<OtcCoin> otcCoins = otcCoinService.findAll();
+		for (OtcCoin coin : otcCoins) {
 			MemberLegalCurrencyWallet memberLegalCurrencyWallet = new MemberLegalCurrencyWallet();
 
-			memberLegalCurrencyWallet.setCoin(coin);
+			memberLegalCurrencyWallet.setOtcCoin(coin);
 			memberLegalCurrencyWallet.setMemberId(memberId);
 			memberLegalCurrencyWallet.setBalance(BigDecimal.ZERO);
 			memberLegalCurrencyWallet.setFrozenBalance(BigDecimal.ZERO);

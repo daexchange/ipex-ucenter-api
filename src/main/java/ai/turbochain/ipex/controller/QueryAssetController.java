@@ -84,14 +84,14 @@ public class QueryAssetController {
         List<MemberLegalCurrencyWallet> wallets = memberLegalCurrencyWalletService.findAllByMemberId(member.getId());
         List<RespWallet> respWalletList = new ArrayList<>();
         wallets.forEach(wallet -> {
-            CoinExchangeFactory.ExchangeRate rate = coinExchangeFactory.get(wallet.getCoin().getUnit());
+            CoinExchangeFactory.ExchangeRate rate = coinExchangeFactory.get(wallet.getOtcCoin().getUnit());
             if (rate != null) {
-                wallet.getCoin().setUsdRate(rate.getUsdRate().doubleValue());
-                wallet.getCoin().setCnyRate(rate.getCnyRate().doubleValue());
+            //    wallet.getCoin().setUsdRate(rate.getUsdRate().doubleValue());
+            //    wallet.getCoin().setCnyRate(rate.getCnyRate().doubleValue());
             } else {
-                log.info("unit = {} , rate = null ", wallet.getCoin().getUnit());
+                log.info("unit = {} , rate = null ", wallet.getOtcCoin().getUnit());
             }
-            OtcCoin otcCoin = otcCoinService.findByUnit(wallet.getCoin().getUnit());
+            OtcCoin otcCoin = otcCoinService.findByUnit(wallet.getOtcCoin().getUnit());
             RespWallet respWallet = new RespWallet();
             respWallet.setWallet(wallet);
             respWallet.setOtcCoin_id(otcCoin.getId());

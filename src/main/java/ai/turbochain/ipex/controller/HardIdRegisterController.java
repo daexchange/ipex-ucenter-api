@@ -18,7 +18,6 @@ import javax.validation.Valid;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.util.ByteSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,22 +27,21 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
-import ai.turbochain.ipex.constant.BooleanEnum;
 import ai.turbochain.ipex.constant.CommonStatus;
 import ai.turbochain.ipex.constant.MemberLevelEnum;
 import ai.turbochain.ipex.constant.MemberRegisterOriginEnum;
-import ai.turbochain.ipex.entity.Coin;
+import ai.turbochain.ipex.constant.RealNameStatus;
 import ai.turbochain.ipex.entity.Country;
 import ai.turbochain.ipex.entity.HardIdRegister;
 import ai.turbochain.ipex.entity.Location;
 import ai.turbochain.ipex.entity.Member;
 import ai.turbochain.ipex.entity.MemberLegalCurrencyWallet;
-import ai.turbochain.ipex.entity.MemberWallet;
-import ai.turbochain.ipex.service.CoinService;
+import ai.turbochain.ipex.entity.OtcCoin;
 import ai.turbochain.ipex.service.LocaleMessageSourceService;
 import ai.turbochain.ipex.service.MemberLegalCurrencyWalletService;
 import ai.turbochain.ipex.service.MemberService;
 import ai.turbochain.ipex.service.MemberWalletService;
+import ai.turbochain.ipex.service.OtcCoinService;
 import ai.turbochain.ipex.util.BindingResultUtil;
 import ai.turbochain.ipex.util.IdWorkByTwitter;
 import ai.turbochain.ipex.util.Md5;
@@ -63,7 +61,7 @@ public class HardIdRegisterController {
 	@Autowired
 	private ExecutorService executorService;
 	@Autowired
-	private CoinService coinService;
+	private OtcCoinService otcCoinService;
 	@Autowired
 	private RestTemplate restTemplate;
 	@Autowired
@@ -161,7 +159,7 @@ public class HardIdRegisterController {
         		return error(localeMessageSourceService.getMessage("REGISTRATION_FAILED"));
         	} else {
         		if (MemberRegisterOriginEnum.HARDID.getSourceType().intValue()!=memberOld.getOrigin().intValue()) {
-                	return error("当前邮箱或手机号已注册");
+                	//return error("当前邮箱或手机号已注册");
                 }
         		
         		memberOld.setEmail(hardIdRegister.getEmail());
@@ -171,7 +169,7 @@ public class HardIdRegisterController {
         			memberService.save(memberOld);
         		}catch(Exception e) {
         			e.printStackTrace();
-        			return error("请手机号或邮箱地址已被绑定");
+        			//return error("该手机号或邮箱地址已被绑定");
         		}
                 return success("绑定成功");
         	}
@@ -327,6 +325,7 @@ public class HardIdRegisterController {
         member.setCountry(null);
         member.setLocation(null);
         
+        member.setRealNameStatus(RealNameStatus.NOT_CERTIFIED);
         member.setStatus(CommonStatus.NORMAL);
         member.setMemberLevel(MemberLevelEnum.GENERAL);
         member.setPassword(password);
@@ -352,46 +351,11 @@ public class HardIdRegisterController {
 	
 	public void registerCoin(Long memberId) {
 		// 获取所有支持的币种
-		List<Coin> coins = coinService.findAll();
-		for (Coin coin : coins) {
-			MemberWallet wallet = new MemberWallet();
-			wallet.setCoin(coin);
-			wallet.setMemberId(memberId);
-			wallet.setBalance(new BigDecimal(0));
-			wallet.setFrozenBalance(new BigDecimal(0));
-			wallet.setAddress("");
-            if(coin.getEnableRpc() == BooleanEnum.IS_TRUE) {
-                String account = "U" + memberId;
-                //远程RPC服务URL,后缀为币种单位
-                String serviceName = "SERVICE-RPC-" + coin.getUnit();
-                try{
-                    String url = "http://" + serviceName + "/rpc/address/{account}";
-                    ResponseEntity<MessageResult> result = restTemplate.getForEntity(url, MessageResult.class, account);
-                    log.info("remote call:service={},result={}", serviceName, result);
-                    if (result.getStatusCode().value() == 200) {
-                        MessageResult mr = result.getBody();
-                        log.info("mr={}", mr);
-                        if (mr.getCode() == 0) {
-                            //返回地址成功，调用持久化
-                            String address = (String) mr.getData();
-                            wallet.setAddress(address);
-                        }
-                    }
-                }
-                catch (Exception e){
-                	log.error("call {} failed,error={}",serviceName,e.getMessage());
-                    wallet.setAddress("");
-                }
-            } else {
-                wallet.setAddress("");
-            }
-            
-			// 保存
-            memberWalletService.save(wallet);
-
+		List<OtcCoin> coins = otcCoinService.findAll();
+		for (OtcCoin coin : coins) {
 			MemberLegalCurrencyWallet memberLegalCurrencyWallet = new MemberLegalCurrencyWallet();
 
-			memberLegalCurrencyWallet.setCoin(coin);
+			memberLegalCurrencyWallet.setOtcCoin(coin);
 			memberLegalCurrencyWallet.setMemberId(memberId);
 			memberLegalCurrencyWallet.setBalance(BigDecimal.ZERO);
 			memberLegalCurrencyWallet.setFrozenBalance(BigDecimal.ZERO);

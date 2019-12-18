@@ -39,4 +39,8 @@ public class HardIdRegister {
     @Pattern(regexp = "^((13[0-9])|(15[^4])|(18[0-9])|(17[0-9])|(147))\\d{8}$", message = "{LoginByPhone.phone.pattern}")
     /* @NotBlank(message = "{LoginByPhone.phone.null}")*/
     private String mobilePhone;
+    
+    private String userName;
+    
+    private String avatar;
 }

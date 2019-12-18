@@ -1,5 +1,6 @@
 package ai.turbochain.ipex.controller;
 
+import static ai.turbochain.ipex.constant.SysConstant.API_HARD_ID_MEMBER;
 import static ai.turbochain.ipex.util.MessageResult.error;
 import static ai.turbochain.ipex.util.MessageResult.success;
 import static org.springframework.util.Assert.isTrue;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.SessionAttribute;
 import org.springframework.web.client.RestTemplate;
 
 import ai.turbochain.ipex.constant.BooleanEnum;
@@ -41,6 +43,7 @@ import ai.turbochain.ipex.entity.Member;
 import ai.turbochain.ipex.entity.MemberLegalCurrencyWallet;
 import ai.turbochain.ipex.entity.MemberWallet;
 import ai.turbochain.ipex.entity.OtcCoin;
+import ai.turbochain.ipex.entity.transform.AuthMember;
 import ai.turbochain.ipex.service.CoinService;
 import ai.turbochain.ipex.service.LocaleMessageSourceService;
 import ai.turbochain.ipex.service.MemberLegalCurrencyWalletService;
@@ -86,8 +89,8 @@ public class HardIdRegisterController {
 	// @PostMapping(value ="/saveNone")
 	@RequestMapping(value = "/saveNone")
 	@Transactional(rollbackFor = Exception.class)
-	public MessageResult save(HttpServletRequest request) throws Exception {
-
+	public MessageResult save(String userName,HttpServletRequest request) throws Exception {
+		
 		// TODO
 		log.info("register start");
 
@@ -99,8 +102,14 @@ public class HardIdRegisterController {
 
 		// HardId不需要密码
 		hardIdRegister.setPassword("123456");
-
-		Member member = memberService.save(getMember(hardIdRegister));
+		
+		Member bean = getMember(hardIdRegister);
+		
+		if (StringUtils.isNotBlank(userName)) {
+			bean.setNickName(userName);
+		}
+		
+		Member member = memberService.save(bean);
 
 		Long memberId = member.getId();
 
@@ -125,6 +134,7 @@ public class HardIdRegisterController {
 		}
 	}
 
+	
 	/**
 	 * 绑定手机或邮箱
 	 *
@@ -154,7 +164,9 @@ public class HardIdRegisterController {
 
 		String email = hardIdRegister.getEmail();
 		String mobilePhone = hardIdRegister.getMobilePhone();
-
+		String nickname = hardIdRegister.getUserName();
+		String avatar = hardIdRegister.getAvatar();
+		
 		if (StringUtils.isBlank(mobilePhone) && StringUtils.isBlank(email)) {
 			return error("请输入绑定手机号和邮箱地址");
 		} else {
@@ -169,7 +181,9 @@ public class HardIdRegisterController {
 
 				memberOld.setEmail(hardIdRegister.getEmail());
 				memberOld.setMobilePhone(hardIdRegister.getMobilePhone());
-
+				memberOld.setAvatar(avatar);
+				memberOld.setNickName(nickname);
+				
 				try {
 					memberService.save(memberOld);
 				} catch (Exception e) {
@@ -181,6 +195,7 @@ public class HardIdRegisterController {
 		}
 	}
 
+	
 	/**
 	 * 注册
 	 *
@@ -425,4 +440,55 @@ public class HardIdRegisterController {
 			memberLegalCurrencyWalletService.save(memberLegalCurrencyWallet);
 		}
 	}
+	
+	
+	/**
+	 * 更新用户名，头像信息
+	 *
+	 * @param HardIdRegister
+	 * @param bindingResult
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/member/update")
+	public MessageResult update(@SessionAttribute(API_HARD_ID_MEMBER) AuthMember user, @Valid HardIdRegister hardIdRegister,
+			BindingResult bindingResult, HttpServletRequest request) throws Exception {
+
+		log.info("bind start");
+
+		MessageResult result = BindingResultUtil.validate(bindingResult);
+
+		if (result != null) {
+			return result;
+		}
+
+		String ip = request.getHeader("X-Real-IP");
+
+		log.info("request ip:" + ip);
+
+		String nickname = hardIdRegister.getUserName();
+		String avatar = hardIdRegister.getAvatar();
+		
+		if (StringUtils.isBlank(nickname)&&StringUtils.isBlank(avatar)) {
+			return error("用户名、头像信息不能为空");
+		}
+		
+		Member memberOld = (Member) memberService.findOne(user.getId());
+
+		if (memberOld == null) { // 新增
+			return error("会员信息不存在");
+		} else {
+
+			memberOld.setAvatar(avatar);
+			memberOld.setNickName(nickname);
+			
+			try {
+				memberService.save(memberOld);
+			} catch (Exception e) {
+				e.printStackTrace();
+				// return error("该手机号或邮箱地址已被绑定");
+			}
+			return success("更新成功");
+		}
+	}
+	
 }

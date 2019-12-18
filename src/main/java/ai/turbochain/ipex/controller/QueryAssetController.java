@@ -1,5 +1,6 @@
 package ai.turbochain.ipex.controller;
 
+import ai.turbochain.ipex.constant.SysConstant;
 import static ai.turbochain.ipex.constant.SysConstant.API_HARD_ID_MEMBER;
 import static ai.turbochain.ipex.util.MessageResult.error;
 
@@ -30,6 +31,19 @@ import ai.turbochain.ipex.service.OtcCoinService;
 import ai.turbochain.ipex.system.CoinExchangeFactory;
 import ai.turbochain.ipex.util.MessageResult;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.servlet4preview.http.HttpServletRequest;
+import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.web.bind.annotation.*;
+
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.List;
+
+import static ai.turbochain.ipex.constant.SysConstant.API_HARD_ID_MEMBER;
+import static ai.turbochain.ipex.constant.SysConstant.SESSION_MEMBER;
 
 /**
  * @author 未央
@@ -53,6 +67,9 @@ public class QueryAssetController {
     private CoinExchangeFactory coinExchangeFactory;
     @Autowired
     private MemberWalletService memberWalletService;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     /**
      * 查询所有记录
@@ -109,7 +126,32 @@ public class QueryAssetController {
         return mr;
     }
 
-    
+    /**
+     * 数字货币兑人民币比率
+     * @param symbol
+     * @return
+     */
+    @GetMapping("/cny-rate/{symbol}")
+    public MessageResult CoinCnyRate(@PathVariable("symbol") String symbol) {
+        String key = SysConstant.DIGITAL_CURRENCY_MARKET_PREFIX + symbol;
+        ValueOperations valueOperations = redisTemplate.opsForValue();
+        Object bondvalue =valueOperations.get(key);
+        if (bondvalue==null) {
+            log.info(symbol+">>>>>>缓存中无利率转换数据>>>>>");
+        } else {
+            log.info(symbol+"缓存中利率转换数据为："+bondvalue);
+        }
+
+        return success(bondvalue);
+    }
+
+    protected MessageResult success(Object obj) {
+        MessageResult mr = new MessageResult(0, "SUCCESS");
+        mr.setData(obj);
+        return mr;
+    }
+
+
     /**
      *  地址信息
      *
@@ -122,7 +164,7 @@ public class QueryAssetController {
     	   return error("请输入币种单位");
         }
         MemberWallet wallet = memberWalletService.findByCoinUnitAndMemberId(coinUnit, member.getId());
-       
+
         if (wallet==null) {
         	return error("请检查钱包是否正常");
         }

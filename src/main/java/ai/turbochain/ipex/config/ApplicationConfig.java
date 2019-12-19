@@ -24,89 +24,87 @@ import ai.turbochain.ipex.interceptor.MemberInterceptor;
  * @see 重命名 corsFilter 解决与 Spring Security 冲突的问题
  */
 @Configuration
-public class ApplicationConfig  extends WebMvcConfigurerAdapter {
+public class ApplicationConfig extends WebMvcConfigurerAdapter {
 
+	/**
+	 * 国际化
+	 *
+	 * @return
+	 */
+	@Bean(name = "messageSource")
+	public ResourceBundleMessageSource getMessageSource() {
+		ResourceBundleMessageSource resourceBundleMessageSource = new ResourceBundleMessageSource();
+		resourceBundleMessageSource.setDefaultEncoding("UTF-8");
+		resourceBundleMessageSource.setBasenames("i18n/messages", "i18n/ValidationMessages");
+		resourceBundleMessageSource.setCacheSeconds(3600);
+		return resourceBundleMessageSource;
+	}
 
-    /**
-     * 	国际化
-     *
-     * @return
-     */
-    @Bean(name = "messageSource")
-    public ResourceBundleMessageSource getMessageSource() {
-        ResourceBundleMessageSource resourceBundleMessageSource = new ResourceBundleMessageSource();
-        resourceBundleMessageSource.setDefaultEncoding("UTF-8");
-        resourceBundleMessageSource.setBasenames("i18n/messages", "i18n/ValidationMessages");
-        resourceBundleMessageSource.setCacheSeconds(3600);
-        return resourceBundleMessageSource;
-    }
-    
-  //使用自定义的LocaleResolver来替换掉默认的LocaleResolver
-  	@Bean
-  	public LocaleResolver localeResolver(){
-  		return new MyLocaleResolver();
-  	}
+	// 使用自定义的LocaleResolver来替换掉默认的LocaleResolver
+	@Bean
+	public LocaleResolver localeResolver() {
+		return new MyLocaleResolver();
+	}
 
-    @Override
-    public Validator getValidator() {
-        LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
-        validator.setValidationMessageSource(getMessageSource());
-        return validator;
-    }
+	@Override
+	public Validator getValidator() {
+		LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
+		validator.setValidationMessageSource(getMessageSource());
+		return validator;
+	}
 
+	@Override
+	public void addResourceHandlers(ResourceHandlerRegistry registry) {
+		registry.addResourceHandler("/asset/**").addResourceLocations("classpath:/asset/");
+		super.addResourceHandlers(registry);
+	}
 
-    @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/asset/**").addResourceLocations("classpath:/asset/");
-        super.addResourceHandlers(registry);
-    }
+	@Override
+	public void addFormatters(FormatterRegistry registry) {
+		registry.addConverterFactory(new OrdinalToEnumConverterFactory());
+		super.addFormatters(registry);
+	}
 
-    @Override
-    public void addFormatters(FormatterRegistry registry) {
-        registry.addConverterFactory(new OrdinalToEnumConverterFactory());
-        super.addFormatters(registry);
-    }
+	/**
+	 * 添加拦截器
+	 */
+	@Override
+	public void addInterceptors(InterceptorRegistry registry) {
+		registry.addInterceptor(getMemberInterceptor()).addPathPatterns("/**").excludePathPatterns("/register/**",
+				"/mobile/code", "/email/code", "/email/login/code", "/email/reset/code", "/getKaptchaImage", "/login",
+				"/check", "/check/login", "/start/captcha", "/support/country", "/ancillary/**", "/announcement/**",
+				"/mobile/reset/code", "/reset/email/code", "/mobile-register/email", "/mobile-register/reset-password",
+				"/mobile-exange/asset/wallet/**", "/mobile-exange/asset/quick-pay", "/reset/login/password",
+				"/vote/info", "/coin/supported", "/financial/items/**", "/coin/guess/index", "/coin/guess/record",
+				"/hard-id/saveNone", "/hard-id/reset-password", "/coin/guess/detail", "/coin/cny-rate/**",
+				"/coin/guess/type");
 
-    /**
-     * 	添加拦截器
-     */
-    @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(getMemberInterceptor())
-                .addPathPatterns("/**")
-                .excludePathPatterns("/register/**", "/mobile/code", "/email/code","/email/login/code","/email/reset/code","/getKaptchaImage","/login","/check","/check/login","/start/captcha","/support/country",
-                        "/ancillary/**","/announcement/**","/mobile/reset/code","/reset/email/code",
-                        "/mobile-register/email","/mobile-register/reset-password","/mobile-exange/asset/wallet/**","/mobile-exange/asset/quick-pay",
-                        "/reset/login/password","/vote/info","/coin/supported","/financial/items/**","/coin/guess/index","/coin/guess/record",
-                       "/hard-id/saveNone","/hard-id/reset-password",
-                       "/coin/guess/detail","/coin/cny-rate/**","/coin/guess/type","/hard-id/transaction/update/withdraw-address","/hard-id/transaction/select/withdraw-address");
-                 
-        super.addInterceptors(registry);
-    }
+		super.addInterceptors(registry);
+	}
 
-    @Bean
-    public FilterRegistrationBean corsFilterForBusi() {
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        CorsConfiguration config = new CorsConfiguration();
-        config.addAllowedOrigin("*");
-        config.setAllowCredentials(true);
-        config.addAllowedHeader("*");
-        config.addAllowedMethod("*");
-        config.addExposedHeader("x-auth-token");
-        source.registerCorsConfiguration("/**", config);
-        FilterRegistrationBean bean = new FilterRegistrationBean(new CorsFilter(source));
-        bean.setOrder(0);
-        return bean;
-    }
-    
-    /**
+	@Bean
+	public FilterRegistrationBean corsFilterForBusi() {
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		CorsConfiguration config = new CorsConfiguration();
+		config.addAllowedOrigin("*");
+		config.setAllowCredentials(true);
+		config.addAllowedHeader("*");
+		config.addAllowedMethod("*");
+		config.addExposedHeader("x-auth-token");
+		source.registerCorsConfiguration("/**", config);
+		FilterRegistrationBean bean = new FilterRegistrationBean(new CorsFilter(source));
+		bean.setOrder(0);
+		return bean;
+	}
+
+	/**
 	 * 这里需要先将限流拦截器入住，不然无法获取到拦截器中的redistemplate
+	 * 
 	 * @return
 	 */
 	@Bean
 	public MemberInterceptor getMemberInterceptor() {
 		return new MemberInterceptor();
 	}
- 
 
 }

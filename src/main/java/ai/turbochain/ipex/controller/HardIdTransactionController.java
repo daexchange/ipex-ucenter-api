@@ -178,7 +178,7 @@ public class HardIdTransactionController {
     }
     
     /**
-             * 提现
+             * 发起HardId OTC 提现
      * @param password 
      * @param unit
      * @param address
@@ -229,8 +229,8 @@ public class HardIdTransactionController {
 		json.put("coin", coin);
 		json.put("address", address);
 		json.put("withdrawId", withdrawRecord.getId());
-		kafkaTemplate.send("withdraw", coin.getUnit(), json.toJSONString());
-		return MessageResult.success(msService.getMessage("WITHDRAW_SUCCESS"));
+		kafkaTemplate.send("hardId-withdraw", coin.getUnit(), json.toJSONString());
+		return MessageResult.success(msService.getMessage("START_HARDID_WITHDRAW"));
     }
 
     

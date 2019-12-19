@@ -21,6 +21,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -29,8 +30,6 @@ import org.springframework.web.bind.annotation.SessionAttribute;
 
 import com.alibaba.fastjson.JSONObject;
 
-import ai.turbochain.ipex.entity.ScanWithdrawRecord;
-import ai.turbochain.ipex.entity.WithdrawWalletInfo;
 import ai.turbochain.ipex.constant.BooleanEnum;
 import ai.turbochain.ipex.constant.CommonStatus;
 import ai.turbochain.ipex.constant.SysConstant;
@@ -40,7 +39,9 @@ import ai.turbochain.ipex.entity.Member;
 import ai.turbochain.ipex.entity.MemberAddress;
 import ai.turbochain.ipex.entity.MemberWallet;
 import ai.turbochain.ipex.entity.ScanMemberAddress;
+import ai.turbochain.ipex.entity.ScanWithdrawRecord;
 import ai.turbochain.ipex.entity.WithdrawRecord;
+import ai.turbochain.ipex.entity.WithdrawWalletInfo;
 import ai.turbochain.ipex.entity.transform.AuthMember;
 import ai.turbochain.ipex.exception.InformationExpiredException;
 import ai.turbochain.ipex.service.CoinService;

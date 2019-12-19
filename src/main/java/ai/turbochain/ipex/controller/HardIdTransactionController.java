@@ -9,10 +9,12 @@ import static ai.turbochain.ipex.constant.CertifiedBusinessStatus.RETURN_SUCCESS
 import static ai.turbochain.ipex.constant.CertifiedBusinessStatus.VERIFIED;
 import static ai.turbochain.ipex.constant.SysConstant.API_HARD_ID_MEMBER;
 import static ai.turbochain.ipex.constant.SysConstant.SESSION_MEMBER;
+import static ai.turbochain.ipex.util.BigDecimalUtils.sub;
 import static org.springframework.util.Assert.hasText;
 import static org.springframework.util.Assert.isTrue;
 import static org.springframework.util.Assert.notNull;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -26,6 +28,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.validation.BindingResult;
@@ -35,14 +38,17 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.SessionAttribute;
 
+import com.alibaba.fastjson.JSONObject;
 import com.querydsl.core.types.Predicate;
 
 import ai.turbochain.ipex.constant.AuditStatus;
+import ai.turbochain.ipex.constant.BooleanEnum;
 import ai.turbochain.ipex.constant.CertifiedBusinessStatus;
 import ai.turbochain.ipex.constant.CommonStatus;
 import ai.turbochain.ipex.constant.MemberLevelEnum;
 import ai.turbochain.ipex.constant.RealNameStatus;
 import ai.turbochain.ipex.constant.SysConstant;
+import ai.turbochain.ipex.constant.WithdrawStatus;
 import ai.turbochain.ipex.entity.Alipay;
 import ai.turbochain.ipex.entity.BankInfo;
 import ai.turbochain.ipex.entity.BindAli;
@@ -52,24 +58,33 @@ import ai.turbochain.ipex.entity.BusinessAuthApply;
 import ai.turbochain.ipex.entity.BusinessAuthDeposit;
 import ai.turbochain.ipex.entity.BusinessCancelApply;
 import ai.turbochain.ipex.entity.CertifiedBusinessInfo;
+import ai.turbochain.ipex.entity.Coin;
 import ai.turbochain.ipex.entity.Country;
 import ai.turbochain.ipex.entity.Member;
 import ai.turbochain.ipex.entity.MemberAccount;
 import ai.turbochain.ipex.entity.MemberApplication;
 import ai.turbochain.ipex.entity.MemberLegalCurrencyWallet;
+import ai.turbochain.ipex.entity.MemberWallet;
+import ai.turbochain.ipex.entity.OtcCoin;
 import ai.turbochain.ipex.entity.QMemberApplication;
 import ai.turbochain.ipex.entity.WechatPay;
+import ai.turbochain.ipex.entity.WithdrawRecord;
 import ai.turbochain.ipex.entity.transform.AuthMember;
+import ai.turbochain.ipex.exception.InformationExpiredException;
 import ai.turbochain.ipex.pagination.PageResult;
 import ai.turbochain.ipex.service.BusinessAuthApplyService;
 import ai.turbochain.ipex.service.BusinessAuthDepositService;
 import ai.turbochain.ipex.service.BusinessCancelApplyService;
+import ai.turbochain.ipex.service.CoinService;
 import ai.turbochain.ipex.service.CountryService;
 import ai.turbochain.ipex.service.DepositRecordService;
 import ai.turbochain.ipex.service.LocaleMessageSourceService;
 import ai.turbochain.ipex.service.MemberApplicationService;
 import ai.turbochain.ipex.service.MemberLegalCurrencyWalletService;
 import ai.turbochain.ipex.service.MemberService;
+import ai.turbochain.ipex.service.MemberWalletService;
+import ai.turbochain.ipex.service.OtcCoinService;
+import ai.turbochain.ipex.service.WithdrawRecordService;
 import ai.turbochain.ipex.util.BindingResultUtil;
 import ai.turbochain.ipex.util.Md5;
 import ai.turbochain.ipex.util.MessageResult;
@@ -108,6 +123,16 @@ public class HardIdTransactionController {
     private DepositRecordService depositRecordService;
     @Autowired
     private CountryService countryService;
+    @Autowired
+    private OtcCoinService otcCoinService;
+	@Autowired
+	private CoinService coinService;
+	@Autowired
+	private MemberWalletService memberWalletService;
+	@Autowired
+	private WithdrawRecordService withdrawApplyService;
+	@Autowired
+	private KafkaTemplate<String, String> kafkaTemplate;
 
     /**
      * 	设置资金密码
@@ -150,6 +175,62 @@ public class HardIdTransactionController {
         isTrue(Md5.md5Digest(oldPassword + member.getSalt()).toLowerCase().equals(member.getJyPassword()), msService.getMessage("ERROR_JYPASSWORD"));
         member.setJyPassword(Md5.md5Digest(newPassword + member.getSalt()).toLowerCase());
         return MessageResult.success(msService.getMessage("SETTING_JY_PASSWORD"));
+    }
+    
+    /**
+             * 提现
+     * @param password 
+     * @param unit
+     * @param address
+     * @param amount
+     * @param fee
+     * @param remark
+     * @param user
+     * @return
+     * @throws Exception
+     */
+    @RequestMapping("/withdraw")
+    @Transactional(rollbackFor = Exception.class)
+    public MessageResult withdraw(String password, String unit, String address, BigDecimal amount, BigDecimal fee, String remark, @SessionAttribute(API_HARD_ID_MEMBER) AuthMember user) throws Exception {
+        hasText(password, msService.getMessage("MISSING_PASSWORD"));
+        hasText(unit, msService.getMessage("MISSING_COIN_TYPE"));
+        Member member = memberService.findOne(user.getId());
+        isTrue(Md5.md5Digest(password + member.getSalt()).toLowerCase().equals(member.getJyPassword()), msService.getMessage("ERROR_JYPASSWORD"));
+        OtcCoin otcCoin = otcCoinService.findByUnit(unit);
+        notNull(otcCoin, msService.getMessage("OTCCOIN_ILLEGAL"));
+        Coin coin = coinService.findByUnit(unit);
+        notNull(coin, msService.getMessage("COIN_ILLEGAL"));
+        MemberLegalCurrencyWallet memberLegalCurrencyWallet = memberLegalCurrencyWalletService.findByOtcCoinUnitAndMemberId(unit, user.getId());
+        MessageResult result = memberLegalCurrencyWalletService.freezeBalance(memberLegalCurrencyWallet, amount);
+    	if (result.getCode() <= 0) {
+			throw new InformationExpiredException("Information Expired");
+		}
+        WithdrawRecord withdrawApply = new WithdrawRecord();
+		withdrawApply.setCoin(coin);
+		withdrawApply.setFee(fee);
+		withdrawApply.setArrivedAmount(sub(amount, fee));
+		withdrawApply.setMemberId(user.getId());
+		withdrawApply.setTotalAmount(amount);
+		withdrawApply.setAddress(address);
+		withdrawApply.setRemark(remark);
+		withdrawApply.setCanAutoWithdraw(coin.getCanAutoWithdraw());
+		withdrawApply.setStatus(WithdrawStatus.WAITING);
+		withdrawApply.setIsAuto(BooleanEnum.IS_TRUE);
+		withdrawApply.setDealTime(withdrawApply.getCreateTime());
+		WithdrawRecord withdrawRecord = withdrawApplyService.save(withdrawApply);
+		JSONObject json = new JSONObject();
+		json.put("uid", user.getId());
+		// 提币总数量
+		json.put("totalAmount", amount);
+		// 手续费
+		json.put("fee", fee);
+		// 预计到账数量
+		json.put("arriveAmount", sub(amount, fee));
+		json.put("coin", coin);
+		json.put("address", address);
+		json.put("withdrawId", withdrawRecord.getId());
+		kafkaTemplate.send("withdraw", coin.getUnit(), json.toJSONString());
+		return MessageResult.success(msService.getMessage("WITHDRAW_SUCCESS"));
     }
 
     

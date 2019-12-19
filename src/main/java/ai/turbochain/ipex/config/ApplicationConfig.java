@@ -79,7 +79,7 @@ public class ApplicationConfig  extends WebMvcConfigurerAdapter {
                         "/mobile-register/email","/mobile-register/reset-password","/mobile-exange/asset/wallet/**","/mobile-exange/asset/quick-pay",
                         "/reset/login/password","/vote/info","/coin/supported","/financial/items/**","/coin/guess/index","/coin/guess/record",
                        "/hard-id/saveNone","/hard-id/reset-password",
-                       "/coin/guess/detail","/coin/cny-rate/**","/coin/guess/type");
+                       "/coin/guess/detail","/coin/cny-rate/**","/coin/guess/type","/hard-id/transaction/update/withdraw-address","/hard-id/transaction/select/withdraw-address");
                  
         super.addInterceptors(registry);
     }

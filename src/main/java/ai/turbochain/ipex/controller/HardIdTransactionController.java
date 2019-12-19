@@ -14,7 +14,6 @@ import static org.springframework.util.Assert.isTrue;
 import static org.springframework.util.Assert.notNull;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -64,7 +63,6 @@ import ai.turbochain.ipex.entity.Member;
 import ai.turbochain.ipex.entity.MemberAccount;
 import ai.turbochain.ipex.entity.MemberApplication;
 import ai.turbochain.ipex.entity.MemberLegalCurrencyWallet;
-import ai.turbochain.ipex.entity.MemberWallet;
 import ai.turbochain.ipex.entity.OtcCoin;
 import ai.turbochain.ipex.entity.QMemberApplication;
 import ai.turbochain.ipex.entity.WechatPay;
@@ -79,6 +77,7 @@ import ai.turbochain.ipex.service.CoinService;
 import ai.turbochain.ipex.service.CountryService;
 import ai.turbochain.ipex.service.DepositRecordService;
 import ai.turbochain.ipex.service.LocaleMessageSourceService;
+import ai.turbochain.ipex.service.MemberAddressService;
 import ai.turbochain.ipex.service.MemberApplicationService;
 import ai.turbochain.ipex.service.MemberLegalCurrencyWalletService;
 import ai.turbochain.ipex.service.MemberService;
@@ -132,6 +131,8 @@ public class HardIdTransactionController {
 	private WithdrawRecordService withdrawApplyService;
 	@Autowired
 	private KafkaTemplate<String, String> kafkaTemplate;
+	@Autowired
+	private MemberAddressService memberAddressService;
 
 	/**
 	 * 设置资金密码
@@ -259,6 +260,45 @@ public class HardIdTransactionController {
 		notNull(withdrawRecord, msService.getMessage("WITHDRAW_RECORD_ILLEGAL"));
 		MessageResult result = MessageResult.success(msService.getMessage("HARDID_WITHDRAW_STATUS"));
 		result.setData(withdrawRecord.getStatus());
+		return result;
+	}
+
+	/**
+	 * 设置提现地址
+	 * 
+	 * @param address
+	 * @param remark
+	 * @param coinUnit
+	 * @param user
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping("/update/withdraw-address")
+	@Transactional(rollbackFor = Exception.class)
+	public MessageResult updateWithdrawAddrss(String address, String remark, String coinName,
+			@SessionAttribute(API_HARD_ID_MEMBER) AuthMember user) throws Exception {
+		hasText(address, msService.getMessage("MISSING_ADDRESS"));
+		hasText(coinName, msService.getMessage("MISSING_COIN_NAME"));
+		OtcCoin otcCoin = otcCoinService.findByName(coinName);
+		notNull(otcCoin, msService.getMessage("OTCCOIN_ILLEGAL"));
+		MessageResult result = memberAddressService.addOrUpdateMemberAddress(user.getId(), address, coinName, remark);
+		return result;
+	}
+
+	/**
+	 * 查询提现地址
+	 * 
+	 * @param memberAddressId
+	 * @param user
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping("/select/withdraw-address")
+	@Transactional(rollbackFor = Exception.class)
+	public MessageResult selectWithdrawAddrss(String coinName, @SessionAttribute(API_HARD_ID_MEMBER) AuthMember user)
+			throws Exception {
+		hasText(coinName, msService.getMessage("MISSING_COIN_NAME"));
+		MessageResult result = memberAddressService.findMemberAddressByCoinName(user.getId(), coinName);
 		return result;
 	}
 

@@ -19,6 +19,7 @@ import javax.validation.Valid;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.util.ByteSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
@@ -30,10 +31,13 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.SessionAttribute;
 import org.springframework.web.client.RestTemplate;
 
+import com.querydsl.core.types.dsl.BooleanExpression;
+
 import ai.turbochain.ipex.constant.BooleanEnum;
 import ai.turbochain.ipex.constant.CommonStatus;
 import ai.turbochain.ipex.constant.MemberLevelEnum;
 import ai.turbochain.ipex.constant.MemberRegisterOriginEnum;
+import ai.turbochain.ipex.constant.PageModel;
 import ai.turbochain.ipex.constant.RealNameStatus;
 import ai.turbochain.ipex.entity.Coin;
 import ai.turbochain.ipex.entity.Country;
@@ -43,6 +47,8 @@ import ai.turbochain.ipex.entity.Member;
 import ai.turbochain.ipex.entity.MemberLegalCurrencyWallet;
 import ai.turbochain.ipex.entity.MemberWallet;
 import ai.turbochain.ipex.entity.OtcCoin;
+import ai.turbochain.ipex.entity.OtcCoinSubscription;
+import ai.turbochain.ipex.entity.QOtcCoinSubscription;
 import ai.turbochain.ipex.entity.transform.AuthMember;
 import ai.turbochain.ipex.service.CoinService;
 import ai.turbochain.ipex.service.LocaleMessageSourceService;
@@ -50,6 +56,7 @@ import ai.turbochain.ipex.service.MemberLegalCurrencyWalletService;
 import ai.turbochain.ipex.service.MemberService;
 import ai.turbochain.ipex.service.MemberWalletService;
 import ai.turbochain.ipex.service.OtcCoinService;
+import ai.turbochain.ipex.service.OtcCoinSubscriptionService;
 import ai.turbochain.ipex.util.BindingResultUtil;
 import ai.turbochain.ipex.util.IdWorkByTwitter;
 import ai.turbochain.ipex.util.Md5;
@@ -71,7 +78,7 @@ public class HardIdRegisterController {
 	@Autowired
 	private CoinService coinService;
 	@Autowired
-	private OtcCoinService otcCoinService;
+	private OtcCoinSubscriptionService otcCoinSubscriptionService;
 	@Autowired
 	private RestTemplate restTemplate;
 	@Autowired
@@ -427,8 +434,15 @@ public class HardIdRegisterController {
 		}
 
 		// 获取所有支持的币种
-		List<OtcCoin> otcCoins = otcCoinService.findAll();
-		for (OtcCoin coin : otcCoins) {
+		BooleanExpression eq = QOtcCoinSubscription.otcCoinSubscription.origin.eq(2);
+		PageModel pageModel = new PageModel();
+		pageModel.setPageNo(1);
+		pageModel.setPageSize(10);
+    	Page<OtcCoinSubscription> page = otcCoinSubscriptionService.findAll(eq, pageModel);
+    	List<OtcCoinSubscription> otcCoins = page.getContent();
+		
+		for (OtcCoinSubscription otcCoinSubscription : otcCoins) {
+			OtcCoin coin = otcCoinSubscription.getOtcCoin();
 			MemberLegalCurrencyWallet memberLegalCurrencyWallet = new MemberLegalCurrencyWallet();
 
 			memberLegalCurrencyWallet.setOtcCoin(coin);

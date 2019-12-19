@@ -14,6 +14,7 @@ import static org.springframework.util.Assert.isTrue;
 import static org.springframework.util.Assert.notNull;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -238,6 +239,26 @@ public class HardIdTransactionController {
 		kafkaTemplate.send("hardId-withdraw", coin.getUnit(), json.toJSONString());
 		result = MessageResult.success(msService.getMessage("START_HARDID_WITHDRAW"));
 		result.setData(withdrawRecord.getId());
+		return result;
+	}
+
+	/**
+	 * 提币状态（ 0:审核中，1：等待放币，2：失败，3：成功）
+	 * 
+	 * @param withdrawRecordId
+	 * @param user
+	 * @return
+	 * @throws Exception
+	 */
+	@PostMapping("/withdraw/status")
+	@Transactional(rollbackFor = Exception.class)
+	public MessageResult withdrawStatus(Long withdrawRecordId, @SessionAttribute(API_HARD_ID_MEMBER) AuthMember user)
+			throws Exception {
+		hasText(withdrawRecordId.toString(), msService.getMessage("MISSING_WITHDRAW_RECORDID"));
+		WithdrawRecord withdrawRecord = withdrawApplyService.findOne(withdrawRecordId);
+		notNull(withdrawRecord, msService.getMessage("WITHDRAW_RECORD_ILLEGAL"));
+		MessageResult result = MessageResult.success(msService.getMessage("HARDID_WITHDRAW_STATUS"));
+		result.setData(withdrawRecord.getStatus());
 		return result;
 	}
 

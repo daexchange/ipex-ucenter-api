@@ -192,14 +192,14 @@ public class HardIdTransactionController {
 	 * @return
 	 * @throws Exception
 	 */
-	@RequestMapping("/withdraw")
+	@PostMapping("/withdraw")
 	@Transactional(rollbackFor = Exception.class)
-	public MessageResult withdraw(String password, String unit, String address, BigDecimal amount, BigDecimal fee,
+	public MessageResult withdraw(String jyPassword, String unit, String address, BigDecimal amount, BigDecimal fee,
 			String remark, @SessionAttribute(API_HARD_ID_MEMBER) AuthMember user) throws Exception {
-		hasText(password, msService.getMessage("MISSING_PASSWORD"));
+		hasText(jyPassword, msService.getMessage("MISSING_PASSWORD"));
 		hasText(unit, msService.getMessage("MISSING_COIN_TYPE"));
 		Member member = memberService.findOne(user.getId());
-		isTrue(Md5.md5Digest(password + member.getSalt()).toLowerCase().equals(member.getJyPassword()),
+		isTrue(Md5.md5Digest(jyPassword + member.getSalt()).toLowerCase().equals(member.getJyPassword()),
 				msService.getMessage("ERROR_JYPASSWORD"));
 		OtcCoin otcCoin = otcCoinService.findByUnit(unit);
 		notNull(otcCoin, msService.getMessage("OTCCOIN_ILLEGAL"));

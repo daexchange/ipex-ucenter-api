@@ -95,7 +95,7 @@ public class QueryAssetController {
      * @return
      */
     @RequestMapping("/wallet")
-    public MessageResult findWallet(@SessionAttribute(API_HARD_ID_MEMBER) AuthMember member) {
+    public RespMessageResult findWallet(@SessionAttribute(API_HARD_ID_MEMBER) AuthMember member) {
         List<MemberLegalCurrencyWallet> wallets = memberLegalCurrencyWalletService.findAllByMemberId(member.getId());
         List<RespWallet> respWalletList = new ArrayList<>();
 
@@ -143,13 +143,20 @@ public class QueryAssetController {
 
 
         });
-        List list = new ArrayList();
+//        List list = new ArrayList();
         Map map = new HashMap();
         map.put("totalAssets",totalAssets[0]);
-        list.add(respWalletList);
-        list.add(map);
-        MessageResult mr = MessageResult.success("success");
-        mr.setData(list);
+//        list.add(respWalletList);
+//        list.add(map);
+//        RespMessageResult mr = RespMessageResult.success("success");
+//        mr.setData(respWalletList);
+        RespMessageResult mr = new RespMessageResult();
+        mr.setData(respWalletList);
+        mr.setCode(0);
+        mr.setMessage("SUCCESS");
+        mr.setTotalPage(null);
+        mr.setTotalElement(null);
+        mr.setTotalAssets(totalAssets[0]);
         return mr;
     }
 

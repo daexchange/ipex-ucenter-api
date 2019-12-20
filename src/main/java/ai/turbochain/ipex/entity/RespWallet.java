@@ -9,7 +9,7 @@ import lombok.Data;
 @Data
 public class RespWallet {
 
-    private MemberLegalCurrencyWallet wallet;
+    private RespCurrencyWallet wallet;
 
     private Long otcCoin_id;
 

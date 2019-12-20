@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import ai.turbochain.ipex.entity.*;
 import org.apache.catalina.servlet4preview.http.HttpServletRequest;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,10 +22,6 @@ import org.springframework.web.bind.annotation.SessionAttribute;
 import com.sparkframework.lang.Convert;
 
 import ai.turbochain.ipex.constant.TransactionType;
-import ai.turbochain.ipex.entity.MemberLegalCurrencyWallet;
-import ai.turbochain.ipex.entity.MemberWallet;
-import ai.turbochain.ipex.entity.OtcCoin;
-import ai.turbochain.ipex.entity.RespWallet;
 import ai.turbochain.ipex.entity.transform.AuthMember;
 import ai.turbochain.ipex.service.MemberLegalCurrencyWalletService;
 import ai.turbochain.ipex.service.MemberTransactionService;
@@ -114,9 +111,26 @@ public class QueryAssetController {
             } else {
                 log.info("unit = {} , rate = null ", wallet.getOtcCoin().getUnit());
             }
+
+
+            RespCurrencyWallet currencyWallet = new RespCurrencyWallet();
+            currencyWallet.setId(wallet.getId());
+            currencyWallet.setMemberId(wallet.getMemberId());
+            currencyWallet.setOtcCoin(wallet.getOtcCoin());
+            if (wallet.getBalance()!=null){
+                currencyWallet.setBalance(wallet.getBalance().toPlainString());
+            }
+            if (wallet.getFrozenBalance()!=null){
+                currencyWallet.setFrozenBalance(wallet.getFrozenBalance().toPlainString());
+            }
+            if (wallet.getToReleased()!=null){
+                currencyWallet.setToReleased(wallet.getToReleased().toPlainString());
+            }
+            currencyWallet.setVersion(wallet.getVersion());
+
             OtcCoin otcCoin = otcCoinService.findByUnit(wallet.getOtcCoin().getUnit());
             RespWallet respWallet = new RespWallet();
-            respWallet.setWallet(wallet);
+            respWallet.setWallet(currencyWallet);
             respWallet.setOtcCoin_id(otcCoin.getId());
             System.out.println(otcCoin.toString());
             respWalletList.add(respWallet);

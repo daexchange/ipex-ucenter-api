@@ -25,6 +25,7 @@ import javax.validation.Valid;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -62,9 +63,11 @@ import ai.turbochain.ipex.entity.Country;
 import ai.turbochain.ipex.entity.Member;
 import ai.turbochain.ipex.entity.MemberAccount;
 import ai.turbochain.ipex.entity.MemberApplication;
+import ai.turbochain.ipex.entity.MemberDeposit;
 import ai.turbochain.ipex.entity.MemberLegalCurrencyWallet;
 import ai.turbochain.ipex.entity.OtcCoin;
 import ai.turbochain.ipex.entity.QMemberApplication;
+import ai.turbochain.ipex.entity.ScanWithdrawRecord;
 import ai.turbochain.ipex.entity.WechatPay;
 import ai.turbochain.ipex.entity.WithdrawRecord;
 import ai.turbochain.ipex.entity.transform.AuthMember;
@@ -75,10 +78,10 @@ import ai.turbochain.ipex.service.BusinessAuthDepositService;
 import ai.turbochain.ipex.service.BusinessCancelApplyService;
 import ai.turbochain.ipex.service.CoinService;
 import ai.turbochain.ipex.service.CountryService;
-import ai.turbochain.ipex.service.DepositRecordService;
 import ai.turbochain.ipex.service.LocaleMessageSourceService;
 import ai.turbochain.ipex.service.MemberAddressService;
 import ai.turbochain.ipex.service.MemberApplicationService;
+import ai.turbochain.ipex.service.MemberDepositService;
 import ai.turbochain.ipex.service.MemberLegalCurrencyWalletService;
 import ai.turbochain.ipex.service.MemberService;
 import ai.turbochain.ipex.service.MemberWalletService;
@@ -118,7 +121,7 @@ public class HardIdTransactionController {
 	@Autowired
 	private BusinessAuthApplyService businessAuthApplyService;
 	@Autowired
-	private DepositRecordService depositRecordService;
+	private MemberDepositService memberDepositService;
 	@Autowired
 	private CountryService countryService;
 	@Autowired
@@ -261,6 +264,39 @@ public class HardIdTransactionController {
 		MessageResult result = MessageResult.success(msService.getMessage("HARDID_WITHDRAW_STATUS"));
 		result.setData(withdrawRecord.getStatus());
 		return result;
+	}
+
+	/**
+	 * 提币记录
+	 * 
+	 * @param user
+	 * @param page
+	 * @param pageSize
+	 * @return
+	 */
+	@RequestMapping("/withdraw/record")
+	public MessageResult pageWithdraw(int page, int pageSize, @SessionAttribute(API_HARD_ID_MEMBER) AuthMember user) {
+		MessageResult mr = new MessageResult(0, "success");
+		Page<WithdrawRecord> records = withdrawApplyService.findAllByMemberId(user.getId(), page - 1, pageSize);
+		records.map(x -> ScanWithdrawRecord.toScanWithdrawRecord(x));
+		mr.setData(records);
+		return mr;
+	}
+
+	/**
+	 * 提币记录
+	 * 
+	 * @param user
+	 * @param page
+	 * @param pageSize
+	 * @return
+	 */
+	@RequestMapping("/deposit/record")
+	public MessageResult pageDeposit(int page, int pageSize, @SessionAttribute(API_HARD_ID_MEMBER) AuthMember user) {
+		MessageResult mr = new MessageResult(0, "success");
+		Page<MemberDeposit> records = memberDepositService.findAllByMemberId(user.getId(), page - 1, pageSize);
+		mr.setData(records);
+		return mr;
 	}
 
 	/**

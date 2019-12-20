@@ -277,7 +277,7 @@ public class HardIdTransactionController {
 	@RequestMapping("/withdraw/record")
 	public MessageResult pageWithdraw(int page, int pageSize, @SessionAttribute(API_HARD_ID_MEMBER) AuthMember user) {
 		MessageResult mr = new MessageResult(0, "success");
-		Page<WithdrawRecord> records = withdrawApplyService.findAllByMemberId(user.getId(), page - 1, pageSize);
+		Page<WithdrawRecord> records = withdrawApplyService.findAllByMemberId(user.getId(), page, pageSize);
 		records.map(x -> ScanWithdrawRecord.toScanWithdrawRecord(x));
 		mr.setData(records);
 		return mr;
@@ -294,7 +294,7 @@ public class HardIdTransactionController {
 	@RequestMapping("/deposit/record")
 	public MessageResult pageDeposit(int page, int pageSize, @SessionAttribute(API_HARD_ID_MEMBER) AuthMember user) {
 		MessageResult mr = new MessageResult(0, "success");
-		Page<MemberDeposit> records = memberDepositService.findAllByMemberId(user.getId(), page - 1, pageSize);
+		Page<MemberDeposit> records = memberDepositService.findAllByMemberId(user.getId(), page, pageSize);
 		mr.setData(records);
 		return mr;
 	}

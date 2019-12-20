@@ -213,8 +213,8 @@ public class HardIdTransactionController {
 		MemberLegalCurrencyWallet memberLegalCurrencyWallet = memberLegalCurrencyWalletService
 				.findByOtcCoinUnitAndMemberId(unit, user.getId());
 		MessageResult result = memberLegalCurrencyWalletService.freezeBalance(memberLegalCurrencyWallet, amount);
-		if (result.getCode() <= 0) {
-			throw new InformationExpiredException("Information Expired");
+		if (result.getCode() != 0) {
+			throw new Exception("冻结钱包余额失败，请检查提现金额是否大于账户余额！");
 		}
 		WithdrawRecord withdrawApply = new WithdrawRecord();
 		withdrawApply.setCoin(coin);
@@ -262,7 +262,7 @@ public class HardIdTransactionController {
 		WithdrawRecord withdrawRecord = withdrawApplyService.findOne(withdrawRecordId);
 		notNull(withdrawRecord, msService.getMessage("WITHDRAW_RECORD_ILLEGAL"));
 		MessageResult result = MessageResult.success(msService.getMessage("HARDID_WITHDRAW_STATUS"));
-		result.setData(withdrawRecord.getStatus());
+		result.setData(withdrawRecord);
 		return result;
 	}
 

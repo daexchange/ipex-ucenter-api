@@ -185,7 +185,8 @@ public class LoginController extends BaseController {
     private LoginInfo getLoginInfo(String username, String password, String ip, HttpServletRequest request) throws Exception {
         Member member = memberService.login(username, password);
        
-        if (member.getOrigin()!=null) {
+        // 只允许IPEX注册用户登录
+        if (member.getOrigin()!=MemberRegisterOriginEnum.IPEX.getSourceType()) {
         	return null;
         }
         

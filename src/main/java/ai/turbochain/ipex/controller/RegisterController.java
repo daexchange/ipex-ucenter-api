@@ -41,15 +41,16 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.SessionAttribute;
 
-import ai.turbochain.ipex.controller.sdk.NECaptchaVerifier;
-import ai.turbochain.ipex.controller.sdk.NESecretPair;
-import ai.turbochain.ipex.entity.LoginByEmail;
-import ai.turbochain.ipex.entity.LoginByPhone;
 import ai.turbochain.ipex.constant.CommonStatus;
 import ai.turbochain.ipex.constant.MemberLevelEnum;
+import ai.turbochain.ipex.constant.MemberRegisterOriginEnum;
 import ai.turbochain.ipex.constant.SysConstant;
+import ai.turbochain.ipex.controller.sdk.NECaptchaVerifier;
+import ai.turbochain.ipex.controller.sdk.NESecretPair;
 import ai.turbochain.ipex.entity.Country;
 import ai.turbochain.ipex.entity.Location;
+import ai.turbochain.ipex.entity.LoginByEmail;
+import ai.turbochain.ipex.entity.LoginByPhone;
 import ai.turbochain.ipex.entity.Member;
 import ai.turbochain.ipex.entity.transform.AuthMember;
 import ai.turbochain.ipex.event.MemberEvent;
@@ -556,7 +557,7 @@ public class RegisterController {
     @ResponseBody
     @Transactional(rollbackFor = Exception.class)
     public MessageResult sendResetPasswordCode(String account) {
-        Member member = memberService.findByEmail(account);
+        Member member = memberService.findByEmailAndOrigin(account,MemberRegisterOriginEnum.IPEX.getSourceType());
         Assert.notNull(member, localeMessageSourceService.getMessage("MEMBER_NOT_EXISTS"));
         ValueOperations valueOperations = redisTemplate.opsForValue();
         if (valueOperations.get(RESET_PASSWORD_CODE_PREFIX + account) != null) {
@@ -610,9 +611,9 @@ public class RegisterController {
         Object redisCode = valueOperations.get(SysConstant.RESET_PASSWORD_CODE_PREFIX + account);
         notNull(redisCode, localeMessageSourceService.getMessage("VERIFICATION_CODE_NOT_EXISTS"));
         if (mode == 0) {
-            member = memberService.findByPhone(account);
+            member = memberService.findByPhoneAndOrigin(account,MemberRegisterOriginEnum.IPEX.getSourceType());
         } else if (mode == 1) {
-            member = memberService.findByEmail(account);
+            member = memberService.findByEmailAndOrigin(account,MemberRegisterOriginEnum.IPEX.getSourceType());
         }
         isTrue(password.length() >= 6 && password.length() <= 20, localeMessageSourceService.getMessage("PASSWORD_LENGTH_ILLEGAL"));
         notNull(member, localeMessageSourceService.getMessage("MEMBER_NOT_EXISTS"));

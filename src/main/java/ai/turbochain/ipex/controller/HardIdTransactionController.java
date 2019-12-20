@@ -46,6 +46,7 @@ import ai.turbochain.ipex.constant.BooleanEnum;
 import ai.turbochain.ipex.constant.CertifiedBusinessStatus;
 import ai.turbochain.ipex.constant.CommonStatus;
 import ai.turbochain.ipex.constant.MemberLevelEnum;
+import ai.turbochain.ipex.constant.MemberRegisterOriginEnum;
 import ai.turbochain.ipex.constant.RealNameStatus;
 import ai.turbochain.ipex.constant.SysConstant;
 import ai.turbochain.ipex.constant.WithdrawStatus;
@@ -628,7 +629,7 @@ public class HardIdTransactionController {
 
 //        notNull(cache, msService.getMessage("NO_GET_VERIFICATION_CODE"));
 
-		Member member1 = memberService.findByPhone(phone);
+		Member member1 = memberService.findByPhoneAndOrigin(phone,MemberRegisterOriginEnum.HARDID.getSourceType());
 		isTrue(member1 == null, msService.getMessage("PHONE_ALREADY_BOUND"));
 //        临时注释
 //        if (!code.equals(cache.toString())) {
@@ -885,7 +886,7 @@ public class HardIdTransactionController {
 		hasText(password, msService.getMessage("MISSING_LOGIN_PASSWORD"));
 		hasText(phone, msService.getMessage("MISSING_PHONE"));
 		hasText(code, msService.getMessage("MISSING_VERIFICATION_CODE"));
-		Member member1 = memberService.findByPhone(phone);
+		Member member1 = memberService.findByPhoneAndOrigin(phone,MemberRegisterOriginEnum.HARDID.getSourceType());
 		isTrue(member1 == null, msService.getMessage("PHONE_ALREADY_BOUND"));
 		ValueOperations valueOperations = redisTemplate.opsForValue();
 		Object cache = valueOperations.get(SysConstant.PHONE_CHANGE_CODE_PREFIX + member.getMobilePhone());

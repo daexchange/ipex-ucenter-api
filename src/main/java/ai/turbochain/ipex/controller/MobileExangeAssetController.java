@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import ai.turbochain.ipex.constant.BooleanEnum;
 import ai.turbochain.ipex.constant.CommonStatus;
+import ai.turbochain.ipex.constant.MemberRegisterOriginEnum;
 import ai.turbochain.ipex.entity.Coin;
 import ai.turbochain.ipex.entity.Member;
 import ai.turbochain.ipex.entity.MemberWallet;
@@ -121,7 +122,7 @@ public class MobileExangeAssetController {
         		return new MessageResult(RESULT_FAIL_CODE, "当前币种不支持转账");
         	}
         	
-    		Member memberFrom = memberService.findByEmail(payerEmail);
+    		Member memberFrom = memberService.findByEmailAndOrigin(payerEmail,MemberRegisterOriginEnum.DELIVER.getSourceType());
     		
     		if (memberFrom==null) {
         		// TODO 国际化
@@ -136,7 +137,7 @@ public class MobileExangeAssetController {
                 return new MessageResult(RESULT_FAIL_CODE, "余额不足");
             }
         	
-        	Member memberTo = memberService.findByEmail(payeeEmail);
+        	Member memberTo = memberService.findByEmailAndOrigin(payeeEmail,MemberRegisterOriginEnum.DELIVER.getSourceType());
         	
         	if (memberTo==null) {
         		// TODO 国际化
@@ -172,7 +173,7 @@ public class MobileExangeAssetController {
 		  
 	   MessageResult result = MessageResult.success();
 	  
-	   Member memberFrom = memberService.findByEmail(email);
+	   Member memberFrom = memberService.findByEmailAndOrigin(email,MemberRegisterOriginEnum.DELIVER.getSourceType());
 		
 	   if (memberFrom==null) {
    		// TODO 国际化

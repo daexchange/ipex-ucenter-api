@@ -3,6 +3,7 @@ package ai.turbochain.ipex.controller;
 import ai.turbochain.ipex.annotation.AccessLog;
 import ai.turbochain.ipex.constant.AdminModule;
 import ai.turbochain.ipex.constant.CommonStatus;
+import ai.turbochain.ipex.constant.MemberRegisterOriginEnum;
 import ai.turbochain.ipex.constant.SysConstant;
 import ai.turbochain.ipex.controller.BaseController;
 import ai.turbochain.ipex.entity.Admin;
@@ -152,7 +153,7 @@ public class LoginController extends BaseController {
         if (StringUtils.isBlank(username) || StringUtils.isBlank(password)) {
             return error("用户名或密码不能为空");
         }
-        Member member = memberService.findByEmail(username);
+        Member member = memberService.findByEmailAndOrigin(username,MemberRegisterOriginEnum.IPEX.getSourceType());
         if (member == null) {
             return error("用户名不存在，请先注册");
         } else if (!Md5.md5Digest(password + member.getSalt()).toLowerCase().equals(member.getPassword())){

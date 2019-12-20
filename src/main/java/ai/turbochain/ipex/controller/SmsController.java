@@ -1,25 +1,5 @@
 package ai.turbochain.ipex.controller;
 
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.util.Assert;
-import org.springframework.web.bind.annotation.*;
-
-import ai.turbochain.ipex.constant.SysConstant;
-import ai.turbochain.ipex.entity.Country;
-import ai.turbochain.ipex.entity.Member;
-import ai.turbochain.ipex.entity.transform.AuthMember;
-import ai.turbochain.ipex.service.CountryService;
-import ai.turbochain.ipex.service.LocaleMessageSourceService;
-import ai.turbochain.ipex.service.MemberService;
-import ai.turbochain.ipex.util.*;
-import ai.turbochain.ipex.vendor.provider.SMSProvider;
-
-import javax.annotation.Resource;
-
 import static ai.turbochain.ipex.constant.SysConstant.SESSION_MEMBER;
 import static ai.turbochain.ipex.util.MessageResult.error;
 import static ai.turbochain.ipex.util.MessageResult.success;
@@ -27,6 +7,35 @@ import static ai.turbochain.ipex.util.MessageResult.success;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.util.Assert;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.SessionAttribute;
+
+import ai.turbochain.ipex.constant.MemberRegisterOriginEnum;
+import ai.turbochain.ipex.constant.SysConstant;
+import ai.turbochain.ipex.entity.Country;
+import ai.turbochain.ipex.entity.Member;
+import ai.turbochain.ipex.entity.transform.AuthMember;
+import ai.turbochain.ipex.service.CountryService;
+import ai.turbochain.ipex.service.LocaleMessageSourceService;
+import ai.turbochain.ipex.service.MemberService;
+import ai.turbochain.ipex.util.BigDecimalUtils;
+import ai.turbochain.ipex.util.DateUtil;
+import ai.turbochain.ipex.util.GeneratorUtil;
+import ai.turbochain.ipex.util.MessageResult;
+import ai.turbochain.ipex.util.ValidateUtil;
+import ai.turbochain.ipex.vendor.provider.SMSProvider;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author GS
@@ -260,7 +269,7 @@ public class SmsController {
      */
     @RequestMapping(value = "/reset/code", method = RequestMethod.POST)
     public MessageResult resetPasswordCode(String account) throws Exception {
-        Member member = memberService.findByPhone(account);
+        Member member = memberService.findByPhoneAndOrigin(account, MemberRegisterOriginEnum.IPEX.getSourceType());
         Assert.notNull(member, localeMessageSourceService.getMessage("MEMBER_NOT_EXISTS"));
         MessageResult result;
         String randomCode = String.valueOf(GeneratorUtil.getRandomNumber(100000, 999999));

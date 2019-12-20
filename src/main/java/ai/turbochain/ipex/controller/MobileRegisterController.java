@@ -31,6 +31,7 @@ import org.springframework.web.client.RestTemplate;
 import ai.turbochain.ipex.constant.BooleanEnum;
 import ai.turbochain.ipex.constant.CommonStatus;
 import ai.turbochain.ipex.constant.MemberLevelEnum;
+import ai.turbochain.ipex.constant.MemberRegisterOriginEnum;
 import ai.turbochain.ipex.entity.Coin;
 import ai.turbochain.ipex.entity.Country;
 import ai.turbochain.ipex.entity.Location;
@@ -106,7 +107,7 @@ public class MobileRegisterController {
         // TODO 设置IP白名单
         // TODO 每一分钟调用不得超过60次
         
-        Member member = memberService.findByEmail(email);
+        Member member = memberService.findByEmailAndOrigin(email,MemberRegisterOriginEnum.DELIVER.getSourceType());
         
         if (member!=null) {
         	// 更新昵称
@@ -258,7 +259,7 @@ public class MobileRegisterController {
     	String email = mobileRegisterByEmail.getEmail();
     	String password = mobileRegisterByEmail.getPassword();
     	
-    	Member member = memberService.findByEmail(email);
+    	Member member = memberService.findByEmailAndOrigin(email,MemberRegisterOriginEnum.DELIVER.getSourceType());
        
         isTrue(password.length() >= 6 && password.length() <= 20, localeMessageSourceService.getMessage("PASSWORD_LENGTH_ILLEGAL"));
         notNull(member, localeMessageSourceService.getMessage("MEMBER_NOT_EXISTS"));

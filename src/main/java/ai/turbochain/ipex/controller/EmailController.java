@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.SessionAttribute;
 
+import ai.turbochain.ipex.constant.MemberRegisterOriginEnum;
 import ai.turbochain.ipex.constant.SysConstant;
 import ai.turbochain.ipex.entity.Member;
 import ai.turbochain.ipex.entity.transform.AuthMember;
@@ -238,7 +239,7 @@ public class EmailController {
 	 */
 	@RequestMapping(value = "/reset/code", method = RequestMethod.POST)
 	public MessageResult resetPasswordCode(String account) throws Exception {
-		Member member = memberService.findByEmail(account);
+		Member member = memberService.findByEmailAndOrigin(account,MemberRegisterOriginEnum.IPEX.getSourceType());
 
 		Assert.notNull(member, localeMessageSourceService.getMessage("MEMBER_NOT_EXISTS"));
 

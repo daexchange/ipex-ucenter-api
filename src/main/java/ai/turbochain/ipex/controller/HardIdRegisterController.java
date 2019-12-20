@@ -183,7 +183,7 @@ public class HardIdRegisterController {
 				return error(localeMessageSourceService.getMessage("REGISTRATION_FAILED"));
 			} else {
 				if (MemberRegisterOriginEnum.HARDID.getSourceType().intValue() != memberOld.getOrigin().intValue()) {
-					// return error("当前邮箱或手机号已注册");
+					 return error("非HardId注册用户");
 				}
 
 				memberOld.setEmail(hardIdRegister.getEmail());
@@ -239,11 +239,12 @@ public class HardIdRegisterController {
 		} else {
 			Member member = null;
 			if (StringUtils.isNotBlank(mobilePhone) && StringUtils.isNotBlank(email)) {
-				member = memberService.findMemberByMobilePhoneOrEmail(mobilePhone, email);
+				Integer origin = MemberRegisterOriginEnum.HARDID.getSourceType();
+				member = memberService.findMemberByMobilePhoneAndOriginOrEmailAndOrigin(mobilePhone,origin, email,origin);
 			} else if (StringUtils.isNotBlank(mobilePhone)) {
-				member = memberService.findByPhone(mobilePhone);
+				member = memberService.findByPhoneAndOrigin(mobilePhone,MemberRegisterOriginEnum.IPEX.getSourceType());
 			} else if (StringUtils.isNotBlank(email)) {
-				member = memberService.findByEmail(email);
+				member = memberService.findByEmailAndOrigin(email,MemberRegisterOriginEnum.IPEX.getSourceType());
 			} else {
 				return error(localeMessageSourceService.getMessage("REGISTRATION_FAILED"));
 			}
@@ -309,11 +310,12 @@ public class HardIdRegisterController {
 		Member member = null;
 
 		if (StringUtils.isNotBlank(mobilePhone) && StringUtils.isNotBlank(email)) {
-			member = memberService.findMemberByMobilePhoneOrEmail(mobilePhone, email);
+			Integer origin = MemberRegisterOriginEnum.HARDID.getSourceType();
+			member = memberService.findMemberByMobilePhoneAndOriginOrEmailAndOrigin(mobilePhone,origin, email,origin);
 		} else if (StringUtils.isNotBlank(mobilePhone)) {
-			member = memberService.findByPhone(mobilePhone);
+			member = memberService.findByPhoneAndOrigin(mobilePhone,MemberRegisterOriginEnum.IPEX.getSourceType());
 		} else if (StringUtils.isNotBlank(email)) {
-			member = memberService.findByEmail(email);
+			member = memberService.findByEmailAndOrigin(email,MemberRegisterOriginEnum.IPEX.getSourceType());
 		} else {
 			return error(localeMessageSourceService.getMessage("REGISTRATION_FAILED"));
 		}

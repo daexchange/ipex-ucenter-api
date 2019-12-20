@@ -4,8 +4,10 @@ import ai.turbochain.ipex.constant.SysConstant;
 import static ai.turbochain.ipex.constant.SysConstant.API_HARD_ID_MEMBER;
 import static ai.turbochain.ipex.util.MessageResult.error;
 
+import java.math.BigDecimal;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.apache.catalina.servlet4preview.http.HttpServletRequest;
@@ -31,19 +33,12 @@ import ai.turbochain.ipex.service.OtcCoinService;
 import ai.turbochain.ipex.system.CoinExchangeFactory;
 import ai.turbochain.ipex.util.MessageResult;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.catalina.servlet4preview.http.HttpServletRequest;
-import org.apache.commons.lang.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.web.bind.annotation.*;
 
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.List;
-
-import static ai.turbochain.ipex.constant.SysConstant.API_HARD_ID_MEMBER;
-import static ai.turbochain.ipex.constant.SysConstant.SESSION_MEMBER;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author 未央
@@ -106,6 +101,11 @@ public class QueryAssetController {
     public MessageResult findWallet(@SessionAttribute(API_HARD_ID_MEMBER) AuthMember member) {
         List<MemberLegalCurrencyWallet> wallets = memberLegalCurrencyWalletService.findAllByMemberId(member.getId());
         List<RespWallet> respWalletList = new ArrayList<>();
+
+//        List<String> totalAssets = new ArrayList<>();
+//        totalAssets.add("0");
+        String[] totalAssets = {"0"};
+
         wallets.forEach(wallet -> {
             CoinExchangeFactory.ExchangeRate rate = coinExchangeFactory.get(wallet.getOtcCoin().getUnit());
             if (rate != null) {
@@ -120,10 +120,36 @@ public class QueryAssetController {
             respWallet.setOtcCoin_id(otcCoin.getId());
             System.out.println(otcCoin.toString());
             respWalletList.add(respWallet);
+
+
+            BigDecimal cnyRate = new BigDecimal(coinCnyRateInvoking(wallet.getOtcCoin().getUnit()).toString());
+            BigDecimal currentCoinAsset = wallet.getBalance().add(wallet.getFrozenBalance()).multiply(cnyRate);
+            BigDecimal coinAsset = new BigDecimal(totalAssets[0]);
+            totalAssets[0] = coinAsset.add(currentCoinAsset).toString();
+
+
         });
+        List list = new ArrayList();
+        Map map = new HashMap();
+        map.put("totalAssets",totalAssets[0]);
+        list.add(respWalletList);
+        list.add(map);
         MessageResult mr = MessageResult.success("success");
-        mr.setData(respWalletList);
+        mr.setData(list);
         return mr;
+    }
+
+    public Object coinCnyRateInvoking(String symbol) {
+        String key = SysConstant.DIGITAL_CURRENCY_MARKET_PREFIX + symbol;
+        ValueOperations valueOperations = redisTemplate.opsForValue();
+        Object bondvalue =valueOperations.get(key);
+        if (bondvalue==null) {
+            log.info(symbol+">>>>>>缓存中无利率转换数据>>>>>");
+        } else {
+            log.info(symbol+"缓存中利率转换数据为："+bondvalue);
+        }
+
+        return bondvalue;
     }
 
     /**

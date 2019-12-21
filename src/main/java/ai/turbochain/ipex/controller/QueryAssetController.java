@@ -178,18 +178,24 @@ public class QueryAssetController {
      * @param symbol
      * @return
      */
-    @GetMapping("/cny-rate/{symbol}")
-    public MessageResult CoinCnyRate(@PathVariable("symbol") String symbol) {
-        String key = SysConstant.DIGITAL_CURRENCY_MARKET_PREFIX + symbol;
-        ValueOperations valueOperations = redisTemplate.opsForValue();
-        Object bondvalue =valueOperations.get(key);
-        if (bondvalue==null) {
-            log.info(symbol+">>>>>>缓存中无利率转换数据>>>>>");
-        } else {
-            log.info(symbol+"缓存中利率转换数据为："+bondvalue);
-        }
+    @GetMapping("/cny-rate")
+    public MessageResult CoinCnyRate(@SessionAttribute(API_HARD_ID_MEMBER) AuthMember member) {
+        List<MemberLegalCurrencyWallet> wallets = memberLegalCurrencyWalletService.findAllByMemberId(member.getId());
 
-        return success(bondvalue);
+        Map<String,Object> cnyMap = new HashMap<>();
+        wallets.forEach(wallet->{
+            String key = SysConstant.DIGITAL_CURRENCY_MARKET_PREFIX + wallet.getOtcCoin().getUnit();
+            ValueOperations valueOperations = redisTemplate.opsForValue();
+            Object bondvalue =valueOperations.get(key);
+            if (bondvalue==null) {
+                log.info(wallet.getOtcCoin().getUnit()+">>>>>>缓存中无利率转换数据>>>>>");
+            } else {
+                log.info(wallet.getOtcCoin().getUnit()+"缓存中利率转换数据为："+bondvalue);
+            }
+            cnyMap.put(wallet.getOtcCoin().getUnit(),bondvalue);
+        });
+
+        return success(cnyMap);
     }
 
     protected MessageResult success(Object obj) {

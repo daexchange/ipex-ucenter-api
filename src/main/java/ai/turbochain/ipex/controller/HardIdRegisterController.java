@@ -169,36 +169,36 @@ public class HardIdRegisterController {
 
 		log.info("request ip:" + ip);
 
-		String email = hardIdRegister.getEmail();
-		String mobilePhone = hardIdRegister.getMobilePhone();
+		//String email = hardIdRegister.getEmail();
+		//String mobilePhone = hardIdRegister.getMobilePhone();
 		String nickname = hardIdRegister.getUserName();
 		String avatar = hardIdRegister.getAvatar();
 		
-		if (StringUtils.isBlank(mobilePhone) && StringUtils.isBlank(email)) {
-			return error("请输入绑定手机号和邮箱地址");
+		//if (StringUtils.isBlank(mobilePhone) && StringUtils.isBlank(email)) {
+		//	return error("请输入绑定手机号和邮箱地址");
+		//} else {
+		//}
+		Member memberOld = (Member) memberService.findOne(memberId);
+
+		if (memberOld == null) { // 新增
+			return error(localeMessageSourceService.getMessage("REGISTRATION_FAILED"));
 		} else {
-			Member memberOld = (Member) memberService.findOne(memberId);
-
-			if (memberOld == null) { // 新增
-				return error(localeMessageSourceService.getMessage("REGISTRATION_FAILED"));
-			} else {
-				if (MemberRegisterOriginEnum.HARDID.getSourceType().intValue() != memberOld.getOrigin().intValue()) {
-					 return error("非HardId注册用户");
-				}
-
-				memberOld.setEmail(hardIdRegister.getEmail());
-				memberOld.setMobilePhone(hardIdRegister.getMobilePhone());
-				memberOld.setAvatar(avatar);
-				memberOld.setNickName(nickname);
-				
-				try {
-					memberService.save(memberOld);
-				} catch (Exception e) {
-					e.printStackTrace();
-					// return error("该手机号或邮箱地址已被绑定");
-				}
-				return success("绑定成功");
+			if (MemberRegisterOriginEnum.HARDID.getSourceType().intValue() != memberOld.getOrigin().intValue()) {
+				 return error("非HardId注册用户");
 			}
+
+			memberOld.setEmail(hardIdRegister.getEmail());
+			memberOld.setMobilePhone(hardIdRegister.getMobilePhone());
+			memberOld.setAvatar(avatar);
+			memberOld.setNickName(nickname);
+			
+			try {
+				memberService.save(memberOld);
+			} catch (Exception e) {
+				e.printStackTrace();
+				// return error("该手机号或邮箱地址已被绑定");
+			}
+			return success("绑定成功");
 		}
 	}
 
@@ -234,52 +234,52 @@ public class HardIdRegisterController {
 		String email = hardIdRegister.getEmail();
 		String mobilePhone = hardIdRegister.getMobilePhone();
 
-		if (StringUtils.isBlank(mobilePhone) && StringUtils.isBlank(email)) {
-			return error("请输入绑定手机号和邮箱地址");
+		//if (StringUtils.isBlank(mobilePhone) && StringUtils.isBlank(email)) {
+		//	return error("请输入绑定手机号和邮箱地址");
+		//} else {
+		//}
+		Member member = null;
+		if (StringUtils.isNotBlank(mobilePhone) && StringUtils.isNotBlank(email)) {
+			Integer origin = MemberRegisterOriginEnum.HARDID.getSourceType();
+			member = memberService.findMemberByMobilePhoneAndOriginOrEmailAndOrigin(mobilePhone,origin, email,origin);
+		} else if (StringUtils.isNotBlank(mobilePhone)) {
+			member = memberService.findByPhoneAndOrigin(mobilePhone,MemberRegisterOriginEnum.IPEX.getSourceType());
+		} else if (StringUtils.isNotBlank(email)) {
+			member = memberService.findByEmailAndOrigin(email,MemberRegisterOriginEnum.IPEX.getSourceType());
 		} else {
-			Member member = null;
-			if (StringUtils.isNotBlank(mobilePhone) && StringUtils.isNotBlank(email)) {
-				Integer origin = MemberRegisterOriginEnum.HARDID.getSourceType();
-				member = memberService.findMemberByMobilePhoneAndOriginOrEmailAndOrigin(mobilePhone,origin, email,origin);
-			} else if (StringUtils.isNotBlank(mobilePhone)) {
-				member = memberService.findByPhoneAndOrigin(mobilePhone,MemberRegisterOriginEnum.IPEX.getSourceType());
-			} else if (StringUtils.isNotBlank(email)) {
-				member = memberService.findByEmailAndOrigin(email,MemberRegisterOriginEnum.IPEX.getSourceType());
+			return error(localeMessageSourceService.getMessage("REGISTRATION_FAILED"));
+		}
+
+		if (member == null) { // 新增
+
+			Member member1 = memberService.save(getMember(hardIdRegister));
+
+			log.info("register end");
+
+			if (member1 != null) {
+				afterRegister(member1.getId());
+				return success(localeMessageSourceService.getMessage("REGISTRATION_SUCCESS"));
 			} else {
 				return error(localeMessageSourceService.getMessage("REGISTRATION_FAILED"));
 			}
-
-			if (member == null) { // 新增
-
-				Member member1 = memberService.save(getMember(hardIdRegister));
-
-				log.info("register end");
-
-				if (member1 != null) {
-					afterRegister(member1.getId());
-					return success(localeMessageSourceService.getMessage("REGISTRATION_SUCCESS"));
-				} else {
-					return error(localeMessageSourceService.getMessage("REGISTRATION_FAILED"));
-				}
-			} else {
-				if (MemberRegisterOriginEnum.HARDID.getSourceType().intValue() != member.getOrigin().intValue()) {
-					return error("当前邮箱或手机号已注册");
-				}
-
-				member.setEmail(hardIdRegister.getEmail());
-				member.setMobilePhone(hardIdRegister.getMobilePhone());
-
-				// 不可重复随机数
-				String loginNo = String.valueOf(idWorkByTwitter.nextId());
-				// 盐
-				String credentialsSalt = ByteSource.Util.bytes(loginNo).toHex();
-				// 生成密码
-				String password = Md5.md5Digest(hardIdRegister.getPassword() + credentialsSalt).toLowerCase();
-
-				member.setPassword(password);// 更新密码
-
-				return success(localeMessageSourceService.getMessage("REGISTRATION_SUCCESS"));
+		} else {
+			if (MemberRegisterOriginEnum.HARDID.getSourceType().intValue() != member.getOrigin().intValue()) {
+				return error("当前邮箱或手机号已注册");
 			}
+
+			member.setEmail(hardIdRegister.getEmail());
+			member.setMobilePhone(hardIdRegister.getMobilePhone());
+
+			// 不可重复随机数
+			String loginNo = String.valueOf(idWorkByTwitter.nextId());
+			// 盐
+			String credentialsSalt = ByteSource.Util.bytes(loginNo).toHex();
+			// 生成密码
+			String password = Md5.md5Digest(hardIdRegister.getPassword() + credentialsSalt).toLowerCase();
+
+			member.setPassword(password);// 更新密码
+
+			return success(localeMessageSourceService.getMessage("REGISTRATION_SUCCESS"));
 		}
 	}
 

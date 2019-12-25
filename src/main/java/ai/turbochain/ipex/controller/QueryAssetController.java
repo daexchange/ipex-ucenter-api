@@ -1,6 +1,7 @@
 package ai.turbochain.ipex.controller;
 
 import ai.turbochain.ipex.constant.SysConstant;
+
 import static ai.turbochain.ipex.constant.SysConstant.API_HARD_ID_MEMBER;
 import static ai.turbochain.ipex.util.MessageResult.error;
 
@@ -73,10 +74,10 @@ public class QueryAssetController {
      */
     @RequestMapping("transaction/all")
     public MessageResult findTransaction(@SessionAttribute(API_HARD_ID_MEMBER) AuthMember member, HttpServletRequest request, int pageNo, int pageSize,
-                                         @RequestParam(value = "startTime",required = false)  String startTime,
-                                         @RequestParam(value = "endTime",required = false)  String endTime,
-                                         @RequestParam(value = "symbol",required = false)  String symbol,
-                                         @RequestParam(value = "type",required = false)  String type) throws ParseException {
+                                         @RequestParam(value = "startTime", required = false) String startTime,
+                                         @RequestParam(value = "endTime", required = false) String endTime,
+                                         @RequestParam(value = "symbol", required = false) String symbol,
+                                         @RequestParam(value = "type", required = false) String type) throws ParseException {
         MessageResult mr = new MessageResult();
         TransactionType transactionType = null;
         if (StringUtils.isNotEmpty(type)) {
@@ -84,7 +85,7 @@ public class QueryAssetController {
         }
         mr.setCode(0);
         mr.setMessage("success");
-        mr.setData(transactionService.queryByMember(member.getId(), pageNo, pageSize, transactionType, startTime, endTime,symbol));
+        mr.setData(transactionService.queryByMember(member.getId(), pageNo, pageSize, transactionType, startTime, endTime, symbol));
         return mr;
     }
 
@@ -106,8 +107,8 @@ public class QueryAssetController {
         wallets.forEach(wallet -> {
             CoinExchangeFactory.ExchangeRate rate = coinExchangeFactory.get(wallet.getOtcCoin().getUnit());
             if (rate != null) {
-            //    wallet.getCoin().setUsdRate(rate.getUsdRate().doubleValue());
-            //    wallet.getCoin().setCnyRate(rate.getCnyRate().doubleValue());
+                //    wallet.getCoin().setUsdRate(rate.getUsdRate().doubleValue());
+                //    wallet.getCoin().setCnyRate(rate.getCnyRate().doubleValue());
             } else {
                 log.info("unit = {} , rate = null ", wallet.getOtcCoin().getUnit());
             }
@@ -117,13 +118,13 @@ public class QueryAssetController {
             currencyWallet.setId(wallet.getId());
             currencyWallet.setMemberId(wallet.getMemberId());
             currencyWallet.setOtcCoin(wallet.getOtcCoin());
-            if (wallet.getBalance()!=null){
+            if (wallet.getBalance() != null) {
                 currencyWallet.setBalance(wallet.getBalance().toPlainString());
             }
-            if (wallet.getFrozenBalance()!=null){
+            if (wallet.getFrozenBalance() != null) {
                 currencyWallet.setFrozenBalance(wallet.getFrozenBalance().toPlainString());
             }
-            if (wallet.getToReleased()!=null){
+            if (wallet.getToReleased() != null) {
                 currencyWallet.setToReleased(wallet.getToReleased().toPlainString());
             }
             currencyWallet.setVersion(wallet.getVersion());
@@ -135,8 +136,12 @@ public class QueryAssetController {
             System.out.println(otcCoin.toString());
             respWalletList.add(respWallet);
 
+            Object bondValue = coinCnyRateInvoking(wallet.getOtcCoin().getUnit());
+            if (bondValue == null) {
+                bondValue = 1;
+            }
 
-            BigDecimal cnyRate = new BigDecimal(coinCnyRateInvoking(wallet.getOtcCoin().getUnit()).toString());
+            BigDecimal cnyRate = new BigDecimal(bondValue.toString());
             BigDecimal currentCoinAsset = wallet.getBalance().add(wallet.getFrozenBalance()).multiply(cnyRate);
             BigDecimal coinAsset = new BigDecimal(totalAssets[0]);
             totalAssets[0] = coinAsset.add(currentCoinAsset).toString();
@@ -145,7 +150,7 @@ public class QueryAssetController {
         });
 //        List list = new ArrayList();
         Map map = new HashMap();
-        map.put("totalAssets",totalAssets[0]);
+        map.put("totalAssets", totalAssets[0]);
 //        list.add(respWalletList);
 //        list.add(map);
 //        RespMessageResult mr = RespMessageResult.success("success");
@@ -163,11 +168,11 @@ public class QueryAssetController {
     public Object coinCnyRateInvoking(String symbol) {
         String key = SysConstant.DIGITAL_CURRENCY_MARKET_PREFIX + symbol;
         ValueOperations valueOperations = redisTemplate.opsForValue();
-        Object bondvalue =valueOperations.get(key);
-        if (bondvalue==null) {
-            log.info(symbol+">>>>>>缓存中无利率转换数据>>>>>");
+        Object bondvalue = valueOperations.get(key);
+        if (bondvalue == null) {
+            log.info(symbol + ">>>>>>缓存中无利率转换数据>>>>>");
         } else {
-            log.info(symbol+"缓存中利率转换数据为："+bondvalue);
+            log.info(symbol + "缓存中利率转换数据为：" + bondvalue);
         }
 
         return bondvalue;
@@ -175,24 +180,25 @@ public class QueryAssetController {
 
     /**
      * 数字货币兑人民币比率
-     * @param symbol
+     *
+     * @param
      * @return
      */
     @GetMapping("/cny-rate")
     public MessageResult CoinCnyRate(@SessionAttribute(API_HARD_ID_MEMBER) AuthMember member) {
         List<MemberLegalCurrencyWallet> wallets = memberLegalCurrencyWalletService.findAllByMemberId(member.getId());
 
-        Map<String,Object> cnyMap = new HashMap<>();
-        wallets.forEach(wallet->{
+        Map<String, Object> cnyMap = new HashMap<>();
+        wallets.forEach(wallet -> {
             String key = SysConstant.DIGITAL_CURRENCY_MARKET_PREFIX + wallet.getOtcCoin().getUnit();
             ValueOperations valueOperations = redisTemplate.opsForValue();
-            Object bondvalue =valueOperations.get(key);
-            if (bondvalue==null) {
-                log.info(wallet.getOtcCoin().getUnit()+">>>>>>缓存中无利率转换数据>>>>>");
+            Object bondvalue = valueOperations.get(key);
+            if (bondvalue == null) {
+                log.info(wallet.getOtcCoin().getUnit() + ">>>>>>缓存中无利率转换数据>>>>>");
             } else {
-                log.info(wallet.getOtcCoin().getUnit()+"缓存中利率转换数据为："+bondvalue);
+                log.info(wallet.getOtcCoin().getUnit() + "缓存中利率转换数据为：" + bondvalue);
             }
-            cnyMap.put(wallet.getOtcCoin().getUnit(),bondvalue);
+            cnyMap.put(wallet.getOtcCoin().getUnit(), bondvalue);
         });
 
         return success(cnyMap);
@@ -206,20 +212,20 @@ public class QueryAssetController {
 
 
     /**
-     *  地址信息
+     * 地址信息
      *
      * @param member
      * @return
      */
     @RequestMapping("/address")
-    public MessageResult getAddress(@SessionAttribute(API_HARD_ID_MEMBER) AuthMember member,String coinUnit) {
+    public MessageResult getAddress(@SessionAttribute(API_HARD_ID_MEMBER) AuthMember member, String coinUnit) {
         if (StringUtils.isBlank(coinUnit)) {
-    	   return error("请输入币种单位");
+            return error("请输入币种单位");
         }
         MemberWallet wallet = memberWalletService.findByCoinUnitAndMemberId(coinUnit, member.getId());
 
-        if (wallet==null) {
-        	return error("请检查钱包是否正常");
+        if (wallet == null) {
+            return error("请检查钱包是否正常");
         }
         MessageResult mr = MessageResult.success("success");
         mr.setData(wallet.getAddress());

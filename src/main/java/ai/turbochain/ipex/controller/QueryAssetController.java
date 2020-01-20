@@ -1,5 +1,6 @@
 package ai.turbochain.ipex.controller;
 
+import ai.turbochain.ipex.constant.RealNameStatus;
 import ai.turbochain.ipex.constant.SysConstant;
 
 import static ai.turbochain.ipex.constant.SysConstant.API_HARD_ID_MEMBER;
@@ -12,6 +13,8 @@ import java.util.HashMap;
 import java.util.List;
 
 import ai.turbochain.ipex.entity.*;
+import ai.turbochain.ipex.service.*;
+import com.netflix.discovery.converters.Auto;
 import org.apache.catalina.servlet4preview.http.HttpServletRequest;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,10 +27,6 @@ import com.sparkframework.lang.Convert;
 
 import ai.turbochain.ipex.constant.TransactionType;
 import ai.turbochain.ipex.entity.transform.AuthMember;
-import ai.turbochain.ipex.service.MemberLegalCurrencyWalletService;
-import ai.turbochain.ipex.service.MemberTransactionService;
-import ai.turbochain.ipex.service.MemberWalletService;
-import ai.turbochain.ipex.service.OtcCoinService;
 import ai.turbochain.ipex.system.CoinExchangeFactory;
 import ai.turbochain.ipex.util.MessageResult;
 import lombok.extern.slf4j.Slf4j;
@@ -58,11 +57,15 @@ public class QueryAssetController {
 
     @Autowired
     private CoinExchangeFactory coinExchangeFactory;
+
     @Autowired
     private MemberWalletService memberWalletService;
 
     @Autowired
     private RedisTemplate redisTemplate;
+
+    @Autowired
+    private MemberService memberService;
 
     /**
      * 查询所有记录
@@ -230,5 +233,13 @@ public class QueryAssetController {
         MessageResult mr = MessageResult.success("success");
         mr.setData(wallet.getAddress());
         return mr;
+    }
+
+    @RequestMapping("/changeStatus")
+    public MessageResult changeMemberRealNameStatus(Long id) {
+        Member member = memberService.findOne(id);
+        member.setRealNameStatus(RealNameStatus.AUDITING);
+        memberService.save(member);
+        return MessageResult.success();
     }
 }

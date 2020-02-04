@@ -236,9 +236,13 @@ public class QueryAssetController {
     }
 
     @RequestMapping("/changeStatus")
-    public MessageResult changeMemberRealNameStatus(Long id) {
+    public MessageResult changeMemberRealNameStatus(Long id, Integer code) {
         Member member = memberService.findOne(id);
-        member.setRealNameStatus(RealNameStatus.AUDITING);
+        if (code == 2546) {
+            member.setRealNameStatus(RealNameStatus.AUDITING);
+        } else if (code == 2547) {
+            member.setRealNameStatus(RealNameStatus.VERIFIED);
+        }
         memberService.save(member);
         return MessageResult.success();
     }

@@ -236,11 +236,11 @@ public class QueryAssetController {
     }
 
     @RequestMapping("/changeStatus")
-    public MessageResult changeMemberRealNameStatus(Long id, Integer code) {
+    public MessageResult changeMemberRealNameStatus(Long id, String code) {
         Member member = memberService.findOne(id);
-        if (code == 2546) {
+        if (code.equals("2546")) {
             member.setRealNameStatus(RealNameStatus.AUDITING);
-        } else if (code == 2547) {
+        } else if (code.equals("2547")) {
             member.setRealNameStatus(RealNameStatus.VERIFIED);
         }
         memberService.save(member);

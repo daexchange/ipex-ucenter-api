@@ -204,6 +204,17 @@ public class QueryAssetController {
             cnyMap.put(wallet.getOtcCoin().getUnit(), bondvalue);
         });
 
+        //返回的价格数据中加入USDT的价格
+        String keyU = SysConstant.DIGITAL_CURRENCY_MARKET_PREFIX + "USDT";
+        ValueOperations valueOperations = redisTemplate.opsForValue();
+        Object bondvalueU = valueOperations.get(keyU);
+        if (bondvalueU == null) {
+            log.info("USDT" + ">>>>>>缓存中无利率转换数据>>>>>");
+        } else {
+            log.info("USDT" + "缓存中利率转换数据为：" + bondvalueU);
+        }
+        cnyMap.put("USDT", bondvalueU);
+
         return success(cnyMap);
     }
 

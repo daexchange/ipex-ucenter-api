@@ -4,6 +4,7 @@ import ai.turbochain.ipex.constant.RealNameStatus;
 import ai.turbochain.ipex.constant.SysConstant;
 
 import static ai.turbochain.ipex.constant.SysConstant.API_HARD_ID_MEMBER;
+import static ai.turbochain.ipex.constant.SysConstant.SESSION_MEMBER;
 import static ai.turbochain.ipex.util.MessageResult.error;
 
 import java.math.BigDecimal;
@@ -45,6 +46,9 @@ import java.util.concurrent.atomic.AtomicReference;
 @RequestMapping("/query-asset")
 @Slf4j
 public class QueryAssetController {
+
+    @Autowired
+    private MemberWalletService walletService;
 
     @Autowired
     private MemberTransactionService transactionService;
@@ -93,7 +97,7 @@ public class QueryAssetController {
     }
 
     /**
-     * 用户钱包信息
+     * 会员法币账户钱包信息
      *
      * @param member
      * @return
@@ -257,4 +261,27 @@ public class QueryAssetController {
         memberService.save(member);
         return MessageResult.success();
     }
+
+    /**
+     * 会员币币账户钱包信息
+     * @param member
+     * @return
+     */
+    @RequestMapping("/asset-wallet")
+    public MessageResult findAssetWallet(@SessionAttribute(API_HARD_ID_MEMBER) AuthMember member) {
+        List<MemberWallet> wallets = walletService.findAllByMemberId(member.getId());
+        wallets.forEach(wallet -> {
+            CoinExchangeFactory.ExchangeRate rate = coinExchangeFactory.get(wallet.getCoin().getUnit());
+            if (rate != null) {
+                wallet.getCoin().setUsdRate(rate.getUsdRate().doubleValue());
+                wallet.getCoin().setCnyRate(rate.getCnyRate().doubleValue());
+            } else {
+                log.info("unit = {} , rate = null ", wallet.getCoin().getUnit());
+            }
+        });
+        MessageResult mr = MessageResult.success("success");
+        mr.setData(wallets);
+        return mr;
+    }
+
 }

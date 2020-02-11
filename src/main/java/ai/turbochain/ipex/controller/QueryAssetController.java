@@ -264,11 +264,12 @@ public class QueryAssetController {
 
     /**
      * 会员币币账户钱包信息
+     *
      * @param member
      * @return
      */
     @RequestMapping("/asset-wallet")
-    public MessageResult findAssetWallet(@SessionAttribute(API_HARD_ID_MEMBER) AuthMember member) {
+    public MessageResult findAssetWallet(@SessionAttribute(API_HARD_ID_MEMBER) AuthMember member, String unit) {
         List<MemberWallet> wallets = walletService.findAllByMemberId(member.getId());
         wallets.forEach(wallet -> {
             CoinExchangeFactory.ExchangeRate rate = coinExchangeFactory.get(wallet.getCoin().getUnit());
@@ -280,7 +281,15 @@ public class QueryAssetController {
             }
         });
         MessageResult mr = MessageResult.success("success");
-        mr.setData(wallets);
+        if (unit == null) {
+            mr.setData(wallets);
+        } else {
+            wallets.forEach(wallet -> {
+                if (wallet.getCoin().getUnit().equals(unit)) {
+                    mr.setData(wallet);
+                }
+            });
+        }
         return mr;
     }
 

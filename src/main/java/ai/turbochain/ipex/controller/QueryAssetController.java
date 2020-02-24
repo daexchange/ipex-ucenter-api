@@ -19,6 +19,7 @@ import com.netflix.discovery.converters.Auto;
 import org.apache.catalina.servlet4preview.http.HttpServletRequest;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -90,9 +91,16 @@ public class QueryAssetController {
         if (StringUtils.isNotEmpty(type)) {
             transactionType = TransactionType.valueOfOrdinal(Convert.strToInt(type, 0));
         }
+
+        Page<MemberTransaction> memberTransactions = transactionService.queryByMember(member.getId(), pageNo, pageSize, transactionType, startTime, endTime, symbol);
+        List<MemberTransaction> content = memberTransactions.getContent();
+        for (MemberTransaction transaction:content){
+            transaction.setAmount(transaction.getAmount().setScale(8,BigDecimal.ROUND_DOWN));
+        }
+
         mr.setCode(0);
         mr.setMessage("success");
-        mr.setData(transactionService.queryByMember(member.getId(), pageNo, pageSize, transactionType, startTime, endTime, symbol));
+        mr.setData(memberTransactions);
         return mr;
     }
 

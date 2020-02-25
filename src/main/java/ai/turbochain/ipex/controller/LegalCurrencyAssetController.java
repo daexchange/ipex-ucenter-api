@@ -19,12 +19,14 @@ import ai.turbochain.ipex.constant.TransactionType;
 import ai.turbochain.ipex.entity.Member;
 import ai.turbochain.ipex.entity.MemberLegalCurrencyWallet;
 import ai.turbochain.ipex.entity.MemberWallet;
+import ai.turbochain.ipex.entity.OtcCoin;
 import ai.turbochain.ipex.entity.transform.AuthMember;
 import ai.turbochain.ipex.service.LocaleMessageSourceService;
 import ai.turbochain.ipex.service.MemberLegalCurrencyWalletService;
 import ai.turbochain.ipex.service.MemberService;
 import ai.turbochain.ipex.service.MemberTransactionService;
 import ai.turbochain.ipex.service.MemberWalletService;
+import ai.turbochain.ipex.service.OtcCoinService;
 import ai.turbochain.ipex.system.CoinExchangeFactory;
 import ai.turbochain.ipex.util.MessageResult;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +47,8 @@ public class LegalCurrencyAssetController {
     private MemberService memberService;
     @Autowired
     private LocaleMessageSourceService messageSourceService;
+    @Autowired
+    private OtcCoinService otcCoinService;
     
     /**
      * 用户钱包信息
@@ -111,6 +115,9 @@ public class LegalCurrencyAssetController {
     	long memberId = authMember.getId();
     	
     	Member member = memberService.findOne(memberId);
+    	String unit = coinId;
+    	// 根据coinUnit 查询otcCoin
+    	OtcCoin otcCoin = otcCoinService.findByUnit(unit);
     	
     	//TODO 1.根据用户评分限制划转
     	ExangeAssetController.checkMemberTransferToSelf(member,messageSourceService);
@@ -118,10 +125,10 @@ public class LegalCurrencyAssetController {
     	//TODO 2.划转
         if (AccountType.LegalCurrencyAccount.equals(from)&&// 法币转币币
         		AccountType.ExchangeAccount.equals(to)) {
-        	return memberLegalCurrencyWalletService.transferDecreaseBalance(coinId, memberId, amount);
+        	return memberLegalCurrencyWalletService.transferDecreaseBalance(coinId,otcCoin.getId(), memberId, amount);
         } else if (AccountType.ExchangeAccount.equals(from)&&// 币币转法币
         		AccountType.LegalCurrencyAccount.equals(to)) {
-        	return memberLegalCurrencyWalletService.transferIncreaseBalance(coinId, memberId, amount);
+        	return memberLegalCurrencyWalletService.transferIncreaseBalance(coinId,otcCoin.getId(), memberId, amount);
         } else {
         	return new MessageResult(500,"请重新选择划转账户");
         }
@@ -140,8 +147,12 @@ public class LegalCurrencyAssetController {
     	
     	long memberId = member.getId();
     	
+    	String unit = coinId;
+    	// 根据coinUnit 查询otcCoin
+    	OtcCoin otcCoin = otcCoinService.findByUnit(unit);
+    	
     	// 法币账户
-    	MemberLegalCurrencyWallet memberLegalCurrencyWallet = memberLegalCurrencyWalletService.getMemberWalletByCoinAndMemberId(coinId, memberId);
+    	MemberLegalCurrencyWallet memberLegalCurrencyWallet = memberLegalCurrencyWalletService.getByOtcCoinIdAndMemberId(otcCoin.getId(), memberId);
     	
     	// 币币账户
     	MemberWallet memberWallet = memberWalletService.getMemberWalletByCoinAndMemberId(coinId, memberId);

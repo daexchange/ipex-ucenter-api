@@ -66,6 +66,7 @@ import ai.turbochain.ipex.entity.MemberAccount;
 import ai.turbochain.ipex.entity.MemberApplication;
 import ai.turbochain.ipex.entity.MemberDeposit;
 import ai.turbochain.ipex.entity.MemberLegalCurrencyWallet;
+import ai.turbochain.ipex.entity.MemberWallet;
 import ai.turbochain.ipex.entity.OtcCoin;
 import ai.turbochain.ipex.entity.QMemberApplication;
 import ai.turbochain.ipex.entity.ScanWithdrawRecord;
@@ -207,15 +208,19 @@ public class HardIdTransactionController {
 		Member member = memberService.findOne(user.getId());
 		isTrue(Md5.md5Digest(jyPassword + member.getSalt()).toLowerCase().equals(member.getJyPassword()),
 				msService.getMessage("ERROR_JYPASSWORD"));
-		OtcCoin otcCoin = otcCoinService.findByUnit(unit);
-		notNull(otcCoin, msService.getMessage("OTCCOIN_ILLEGAL"));
+		//OtcCoin otcCoin = otcCoinService.findByUnit(unit);
+		//notNull(otcCoin, msService.getMessage("OTCCOIN_ILLEGAL"));
 		Coin coin = coinService.findByUnit(unit);
 		notNull(coin, msService.getMessage("COIN_ILLEGAL"));
-		MemberLegalCurrencyWallet memberLegalCurrencyWallet = memberLegalCurrencyWalletService
-				.findByOtcCoinUnitAndMemberId(unit, user.getId());
-		MessageResult result = memberLegalCurrencyWalletService.freezeBalance(memberLegalCurrencyWallet, amount);
+		isTrue(coin.getStatus().equals(CommonStatus.NORMAL) && coin.getCanWithdraw().equals(BooleanEnum.IS_TRUE),
+				msService.getMessage("COIN_NOT_SUPPORT"));
+		//MemberLegalCurrencyWallet memberLegalCurrencyWallet = memberLegalCurrencyWalletService
+		//		.findByOtcCoinUnitAndMemberId(unit, user.getId());
+		//MessageResult result = memberLegalCurrencyWalletService.freezeBalance(memberLegalCurrencyWallet, amount);
+		MemberWallet memberWallet = memberWalletService.findByCoinAndMemberId(coin, user.getId());
+		MessageResult result = memberWalletService.freezeBalance(memberWallet, amount);
 		if (result.getCode() != 0) {
-			throw new Exception("冻结钱包余额失败，请检查提现金额是否大于账户余额！");
+			throw new InformationExpiredException("冻结钱包余额失败，请检查提现金额是否大于账户余额！");
 		}
 		WithdrawRecord withdrawApply = new WithdrawRecord();
 		withdrawApply.setCoin(coin);

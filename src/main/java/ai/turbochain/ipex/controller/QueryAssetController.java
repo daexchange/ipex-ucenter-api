@@ -19,6 +19,7 @@ import com.netflix.discovery.converters.Auto;
 import org.apache.catalina.servlet4preview.http.HttpServletRequest;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -71,6 +72,9 @@ public class QueryAssetController {
     @Autowired
     private MemberService memberService;
 
+    @Autowired
+    private TransferSelfRecordService transferSelfRecordService;
+
     /**
      * 查询所有记录
      *
@@ -90,9 +94,16 @@ public class QueryAssetController {
         if (StringUtils.isNotEmpty(type)) {
             transactionType = TransactionType.valueOfOrdinal(Convert.strToInt(type, 0));
         }
+
+        Page<MemberTransaction> memberTransactions = transactionService.queryByMember(member.getId(), pageNo, pageSize, transactionType, startTime, endTime, symbol);
+        List<MemberTransaction> content = memberTransactions.getContent();
+        for (MemberTransaction transaction:content){
+            transaction.setAmount(transaction.getAmount().setScale(8,BigDecimal.ROUND_DOWN));
+        }
+
         mr.setCode(0);
         mr.setMessage("success");
-        mr.setData(transactionService.queryByMember(member.getId(), pageNo, pageSize, transactionType, startTime, endTime, symbol));
+        mr.setData(memberTransactions);
         return mr;
     }
 
@@ -290,6 +301,31 @@ public class QueryAssetController {
                 }
             });
         }
+        return mr;
+    }
+
+    /**
+     * 查询所有资金划转记录
+     *
+     * @param member
+     * @param pageNo
+     * @param pageSize
+     * @return
+     */
+    @RequestMapping("/transferSelf/record")
+    public MessageResult page(@SessionAttribute(API_HARD_ID_MEMBER) AuthMember member,
+                              HttpServletRequest request, int pageNo, int pageSize,
+                              @RequestParam(value = "startTime",required = false) String startTime,
+                              @RequestParam(value = "endTime",required = false) String endTime,
+                              @RequestParam(value = "symbol",required = false) String symbol,
+                              @RequestParam(value = "type",required = false) Integer type) throws ParseException {
+
+        MessageResult mr = new MessageResult();
+
+        mr.setCode(0);
+        mr.setMessage("success");
+        mr.setData(transferSelfRecordService.queryByMember(member.getId(), pageNo, pageSize, type, startTime, endTime,symbol));
+
         return mr;
     }
 

@@ -217,6 +217,7 @@ public class HardIdTransactionController {
 		//MemberLegalCurrencyWallet memberLegalCurrencyWallet = memberLegalCurrencyWalletService
 		//		.findByOtcCoinUnitAndMemberId(unit, user.getId());
 		//MessageResult result = memberLegalCurrencyWalletService.freezeBalance(memberLegalCurrencyWallet, amount);
+		
 		MemberWallet memberWallet = memberWalletService.findByCoinAndMemberId(coin, user.getId());
 		MessageResult result = memberWalletService.freezeBalance(memberWallet, amount);
 		if (result.getCode() != 0) {

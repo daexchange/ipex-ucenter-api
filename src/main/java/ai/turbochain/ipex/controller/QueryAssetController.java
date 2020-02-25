@@ -1,5 +1,6 @@
 package ai.turbochain.ipex.controller;
 
+import ai.turbochain.ipex.constant.MemberLevelEnum;
 import ai.turbochain.ipex.constant.RealNameStatus;
 import ai.turbochain.ipex.constant.SysConstant;
 
@@ -268,6 +269,7 @@ public class QueryAssetController {
             member.setRealNameStatus(RealNameStatus.AUDITING);
         } else if (code.equals("2547")) {
             member.setRealNameStatus(RealNameStatus.VERIFIED);
+            member.setMemberLevel(MemberLevelEnum.REALNAME);
         }
         memberService.save(member);
         return MessageResult.success();

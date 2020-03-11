@@ -55,7 +55,6 @@ import ai.turbochain.ipex.service.LocaleMessageSourceService;
 import ai.turbochain.ipex.service.MemberLegalCurrencyWalletService;
 import ai.turbochain.ipex.service.MemberService;
 import ai.turbochain.ipex.service.MemberWalletService;
-import ai.turbochain.ipex.service.OtcCoinService;
 import ai.turbochain.ipex.service.OtcCoinSubscriptionService;
 import ai.turbochain.ipex.util.BindingResultUtil;
 import ai.turbochain.ipex.util.IdWorkByTwitter;
@@ -455,6 +454,12 @@ public class HardIdRegisterController {
 
 			memberLegalCurrencyWalletService.save(memberLegalCurrencyWallet);
 		}
+		
+		// 创建借贷钱包
+		String serviceLoanName = "LOAN-API";
+        String url = "http://" + serviceLoanName + "/loan/wallet/member/create?memberId=" + memberId;
+         
+        ResponseEntity<MessageResult> result = restTemplate.getForEntity(url, MessageResult.class);
 	}
 	
 	

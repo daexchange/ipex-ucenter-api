@@ -6,7 +6,6 @@ import static org.springframework.util.Assert.isTrue;
 import static org.springframework.util.Assert.notNull;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import javax.annotation.Resource;
@@ -36,16 +35,12 @@ import ai.turbochain.ipex.entity.Coin;
 import ai.turbochain.ipex.entity.Country;
 import ai.turbochain.ipex.entity.Location;
 import ai.turbochain.ipex.entity.Member;
-import ai.turbochain.ipex.entity.MemberLegalCurrencyWallet;
 import ai.turbochain.ipex.entity.MemberWallet;
 import ai.turbochain.ipex.entity.MobileRegisterByEmail;
-import ai.turbochain.ipex.entity.OtcCoin;
 import ai.turbochain.ipex.service.CoinService;
 import ai.turbochain.ipex.service.LocaleMessageSourceService;
-import ai.turbochain.ipex.service.MemberLegalCurrencyWalletService;
 import ai.turbochain.ipex.service.MemberService;
 import ai.turbochain.ipex.service.MemberWalletService;
-import ai.turbochain.ipex.service.OtcCoinService;
 import ai.turbochain.ipex.util.BindingResultUtil;
 import ai.turbochain.ipex.util.IdWorkByTwitter;
 import ai.turbochain.ipex.util.Md5;
@@ -57,7 +52,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/mobile-register")
 public class MobileRegisterController {
 	private String userNameFormat = "U%06d";
-	private Integer Origin_Mobile = 1;
 	private Logger logger = LoggerFactory.getLogger(MobileRegisterController.class);
 	@Autowired
     private MemberService memberService;
@@ -70,14 +64,10 @@ public class MobileRegisterController {
 	@Autowired
 	private CoinService coinService;
 	@Autowired
-	private OtcCoinService otcCoinService;
-	@Autowired
 	private RestTemplate restTemplate;
 	@Autowired
 	private MemberWalletService memberWalletService;
-	@Autowired
-	private MemberLegalCurrencyWalletService memberLegalCurrencyWalletService;
-	
+	 
 	
 	 /**
      * 邮箱注册
@@ -87,14 +77,13 @@ public class MobileRegisterController {
      * @return @RequestBody
      * @throws Exception
      */
-   // @RequestMapping(value ="/email", method = RequestMethod.POST,produces = "application/json;charset=UTF-8",consumes = "application/json;charset=UTF-8")
+	 //@RequestMapping(value ="/email", method = RequestMethod.POST,produces = "application/json;charset=UTF-8",consumes = "application/json;charset=UTF-8")
 	@PostMapping(value ="/email")
 	@ResponseBody
     @Transactional(rollbackFor = Exception.class)
-    public MessageResult registerByEmail(
-            @Valid @RequestBody MobileRegisterByEmail mobileRegisterByEmail,
+    public MessageResult registerByEmail(@Valid @RequestBody MobileRegisterByEmail mobileRegisterByEmail,
             BindingResult bindingResult,HttpServletRequest request) throws Exception {
-        log.info("registerByEmail start");
+    	log.info("registerByEmail start");
     	MessageResult result = BindingResultUtil.validate(bindingResult);
        
         if (result != null) {
@@ -110,11 +99,6 @@ public class MobileRegisterController {
         Member member = memberService.findByEmailAndOrigin(email,MemberRegisterOriginEnum.DELIVER.getSourceType());
         
         if (member!=null) {
-        	// 更新昵称
-        //	if (!mobileRegisterByEmail.getUsername().equals(member.getUsername())) {
-        //		member.setUsername(mobileRegisterByEmail.getUsername());
-        //	}
-           
         	//不可重复随机数
             String loginNo = String.valueOf(idWorkByTwitter.nextId());
             //盐
@@ -126,9 +110,6 @@ public class MobileRegisterController {
         	
             return success(localeMessageSourceService.getMessage("REGISTRATION_SUCCESS"));
         } else {
-        	// 注册时不填写用户名，因此不需要判断用户名是否已经存在
-            //isTrue(!memberService.usernameIsExist(loginByEmail.getUsername()), localeMessageSourceService.getMessage("USERNAME_ALREADY_EXISTS"));
-
             Member member1 = memberService.save(getMember(mobileRegisterByEmail));
             
             log.info("registerByEmail end");
@@ -162,7 +143,7 @@ public class MobileRegisterController {
         member.setPassword(password);
         member.setEmail(mobileRegisterByEmail.getEmail());
         member.setSalt(credentialsSalt);
-        member.setOrigin(Origin_Mobile);//代表手机端
+        member.setOrigin(MemberRegisterOriginEnum.DELIVER.getSourceType());//代表手机端
         
         return member;
     }
@@ -181,8 +162,10 @@ public class MobileRegisterController {
 	
 	public void registerCoin(Long memberId) {
 		// 获取所有支持的币种
-		List<Coin> coins = coinService.findAll();
-		for (Coin coin : coins) {
+		String unit = "PWR";
+		Coin coin = coinService.findByUnit(unit);
+	//	List<Coin> coins = coinService.findAll();
+		//for (Coin coin : coins) {
 			MemberWallet wallet = new MemberWallet();
 			wallet.setCoin(coin);
 			wallet.setMemberId(memberId);
@@ -217,20 +200,7 @@ public class MobileRegisterController {
             
 			// 保存
             memberWalletService.save(wallet);
-		}
-		
-		List<OtcCoin> otcCoins = otcCoinService.findAll();
-		for (OtcCoin coin : otcCoins) {
-			MemberLegalCurrencyWallet memberLegalCurrencyWallet = new MemberLegalCurrencyWallet();
-
-			memberLegalCurrencyWallet.setOtcCoin(coin);
-			memberLegalCurrencyWallet.setMemberId(memberId);
-			memberLegalCurrencyWallet.setBalance(BigDecimal.ZERO);
-			memberLegalCurrencyWallet.setFrozenBalance(BigDecimal.ZERO);
-			memberLegalCurrencyWallet.setToReleased(BigDecimal.ZERO);
-			
-			memberLegalCurrencyWalletService.save(memberLegalCurrencyWallet);
-		}
+		//}
 	}
 	
 	

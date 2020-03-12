@@ -3,42 +3,31 @@ package ai.turbochain.ipex.controller;
 import ai.turbochain.ipex.constant.MemberLevelEnum;
 import ai.turbochain.ipex.constant.RealNameStatus;
 import ai.turbochain.ipex.constant.SysConstant;
-
-import static ai.turbochain.ipex.constant.SysConstant.API_HARD_ID_MEMBER;
-import static ai.turbochain.ipex.constant.SysConstant.SESSION_MEMBER;
-import static ai.turbochain.ipex.util.MessageResult.error;
+import ai.turbochain.ipex.constant.TransactionType;
+import ai.turbochain.ipex.entity.*;
+import ai.turbochain.ipex.entity.transform.AuthMember;
+import ai.turbochain.ipex.service.*;
+import ai.turbochain.ipex.system.CoinExchangeFactory;
+import ai.turbochain.ipex.util.MessageResult;
+import com.sparkframework.lang.Convert;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.servlet4preview.http.HttpServletRequest;
+import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
-import ai.turbochain.ipex.entity.*;
-import ai.turbochain.ipex.service.*;
-import com.netflix.discovery.converters.Auto;
-import org.apache.catalina.servlet4preview.http.HttpServletRequest;
-import org.apache.commons.lang.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.SessionAttribute;
-
-import com.sparkframework.lang.Convert;
-
-import ai.turbochain.ipex.constant.TransactionType;
-import ai.turbochain.ipex.entity.transform.AuthMember;
-import ai.turbochain.ipex.system.CoinExchangeFactory;
-import ai.turbochain.ipex.util.MessageResult;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
+
+import static ai.turbochain.ipex.constant.SysConstant.API_HARD_ID_MEMBER;
+import static ai.turbochain.ipex.util.MessageResult.error;
 
 /**
  * @author 未央
@@ -205,7 +194,7 @@ public class QueryAssetController {
      */
     @GetMapping("/cny-rate")
     public MessageResult CoinCnyRate(@SessionAttribute(API_HARD_ID_MEMBER) AuthMember member) {
-        List<MemberLegalCurrencyWallet> wallets = memberLegalCurrencyWalletService.findAllByMemberId(member.getId());
+        /*List<MemberLegalCurrencyWallet> wallets = memberLegalCurrencyWalletService.findAllByMemberId(member.getId());
 
         Map<String, Object> cnyMap = new HashMap<>();
         wallets.forEach(wallet -> {
@@ -231,7 +220,24 @@ public class QueryAssetController {
         }
         cnyMap.put("USDT", bondvalueU);
 
+        return success(cnyMap);*/
+
+        List<OtcCoin> otcCoinList = otcCoinService.findAll();
+        ValueOperations valueOperations = redisTemplate.opsForValue();
+        Map<String, Object> cnyMap = new HashMap<>();
+        otcCoinList.forEach(otcCoin -> {
+            String key = SysConstant.DIGITAL_CURRENCY_MARKET_PREFIX + otcCoin.getUnit();
+            Object bondvalue = valueOperations.get(key);
+            if (bondvalue == null) {
+                log.info(otcCoin.getUnit() + ">>>>>>缓存中无利率转换数据>>>>>");
+            } else {
+                log.info(otcCoin.getUnit() + "缓存中利率转换数据为：" + bondvalue);
+            }
+            cnyMap.put(otcCoin.getUnit(), bondvalue);
+        });
+
         return success(cnyMap);
+
     }
 
     protected MessageResult success(Object obj) {

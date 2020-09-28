@@ -26,7 +26,7 @@
           <p style="font-size: 1em; color: rgb(39, 50, 77); line-height: 28px; margin: 0;">IPEX团队</p>
         </div>
       </div>
-      <p style="text-align: center; line-height: 1.5; padding: 15px; font-size: 0.75em; color: #999999;">© 2019 ipex.ipcom.io  All Rights Reserved.</p>
+      <p style="text-align: center; line-height: 1.5; padding: 15px; font-size: 0.75em; color: #999999;">© 2020  All Rights Reserved.</p>
     </div>
 </div>
 </table>

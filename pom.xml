@@ -198,6 +198,19 @@
 				</resources>
 			</build>
 		</profile>
+		<profile>
+			<id>art</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+			<build>
+				<resources>
+					<resource>
+						<directory>src/main/resources/art</directory>
+					</resource>
+				</resources>
+			</build>
+		</profile>
 	</profiles>
 	<build>
 		<finalName>ipex-ucenter-api</finalName>

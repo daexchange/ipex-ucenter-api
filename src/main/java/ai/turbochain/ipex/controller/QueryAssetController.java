@@ -1,33 +1,56 @@
 package ai.turbochain.ipex.controller;
 
-import ai.turbochain.ipex.constant.MemberLevelEnum;
-import ai.turbochain.ipex.constant.RealNameStatus;
-import ai.turbochain.ipex.constant.SysConstant;
-import ai.turbochain.ipex.constant.TransactionType;
-import ai.turbochain.ipex.entity.*;
-import ai.turbochain.ipex.entity.transform.AuthMember;
-import ai.turbochain.ipex.service.*;
-import ai.turbochain.ipex.system.CoinExchangeFactory;
-import ai.turbochain.ipex.util.MessageResult;
-import com.sparkframework.lang.Convert;
-import lombok.extern.slf4j.Slf4j;
+import static ai.turbochain.ipex.constant.MemberRegisterOriginEnum.HARDID;
+import static ai.turbochain.ipex.constant.SysConstant.API_HARD_ID_MEMBER;
+import static ai.turbochain.ipex.util.MessageResult.error;
+
+import java.math.BigDecimal;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.catalina.servlet4preview.http.HttpServletRequest;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.SessionAttribute;
 
-import java.math.BigDecimal;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.sparkframework.lang.Convert;
 
-import static ai.turbochain.ipex.constant.SysConstant.API_HARD_ID_MEMBER;
-import static ai.turbochain.ipex.util.MessageResult.error;
+import ai.turbochain.ipex.constant.MemberLevelEnum;
+import ai.turbochain.ipex.constant.RealNameStatus;
+import ai.turbochain.ipex.constant.SysConstant;
+import ai.turbochain.ipex.constant.TransactionType;
+import ai.turbochain.ipex.entity.ExchangeCoin;
+import ai.turbochain.ipex.entity.Member;
+import ai.turbochain.ipex.entity.MemberLegalCurrencyWallet;
+import ai.turbochain.ipex.entity.MemberTransaction;
+import ai.turbochain.ipex.entity.MemberWallet;
+import ai.turbochain.ipex.entity.OtcCoin;
+import ai.turbochain.ipex.entity.RespCurrencyWallet;
+import ai.turbochain.ipex.entity.RespMessageResult;
+import ai.turbochain.ipex.entity.RespWallet;
+import ai.turbochain.ipex.entity.transform.AuthMember;
+import ai.turbochain.ipex.service.ExchangeCoinService;
+import ai.turbochain.ipex.service.MemberLegalCurrencyWalletService;
+import ai.turbochain.ipex.service.MemberService;
+import ai.turbochain.ipex.service.MemberTransactionService;
+import ai.turbochain.ipex.service.MemberWalletService;
+import ai.turbochain.ipex.service.OtcCoinService;
+import ai.turbochain.ipex.service.TransferSelfRecordService;
+import ai.turbochain.ipex.system.CoinExchangeFactory;
+import ai.turbochain.ipex.util.MessageResult;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author 未央
@@ -61,9 +84,11 @@ public class QueryAssetController {
 
     @Autowired
     private MemberService memberService;
-
+    @Autowired
+    private ExchangeCoinService exchangeCoinService;
     @Autowired
     private TransferSelfRecordService transferSelfRecordService;
+    public static final String  WALLET_COIN_HARDID_EXCHANGE = "WALLET_COIN_HARDID_EXCHANGE";
 
     /**
      * 查询所有记录
@@ -193,7 +218,7 @@ public class QueryAssetController {
      * @return
      */
     @GetMapping("/cny-rate")
-    public MessageResult CoinCnyRate(@SessionAttribute(API_HARD_ID_MEMBER) AuthMember member) {
+    public MessageResult CoinCnyRate() {
         /*List<MemberLegalCurrencyWallet> wallets = memberLegalCurrencyWalletService.findAllByMemberId(member.getId());
 
         Map<String, Object> cnyMap = new HashMap<>();
@@ -287,8 +312,8 @@ public class QueryAssetController {
      * @param member
      * @return
      */
-    @RequestMapping("/asset-wallet")
-    public MessageResult findAssetWallet(@SessionAttribute(API_HARD_ID_MEMBER) AuthMember member, String unit) {
+    @RequestMapping("/asset-wallet2")
+    public MessageResult findAssetWallet2(@SessionAttribute(API_HARD_ID_MEMBER) AuthMember member, String unit) {
         List<MemberWallet> wallets = walletService.findAllByMemberId(member.getId());
         wallets.forEach(wallet -> {
             CoinExchangeFactory.ExchangeRate rate = coinExchangeFactory.get(wallet.getCoin().getUnit());
@@ -337,4 +362,67 @@ public class QueryAssetController {
         return mr;
     }
 
+    
+    /**
+     * 会员币币账户钱包信息
+     *
+     * @param member
+     * @return
+     */
+    @RequestMapping("/asset-wallet")
+    public MessageResult findAssetWallet(@SessionAttribute(API_HARD_ID_MEMBER) AuthMember member, String unit) {
+    	 MessageResult mr = MessageResult.success("success");
+    	 
+    	if (StringUtils.isNotBlank(unit)) {
+    		MemberWallet wallet = walletService.findByCoinUnitAndMemberId(unit, member.getId());
+    	
+    		mr.setData(wallet);
+    		
+    		return mr;
+    	} else {
+    		String key = WALLET_COIN_HARDID_EXCHANGE;
+    		
+    		ValueOperations<String, Set<String>> valueOperations = redisTemplate.opsForValue();
+    		
+    		Set<String> coinSet = (Set<String>) valueOperations.get(key);
+    		
+    		if (coinSet == null) {
+	            log.info( ">>>>>>缓存中无HardId币种数据>>>>>");
+	            // 查询支持币种
+	    		List<ExchangeCoin> coins = exchangeCoinService.findAllEnabledBySource(HARDID.getSourceType());
+	    		Set<String> set = new HashSet<String>();
+	    		coins.forEach(item -> {
+	    			set.add(item.getCoinSymbol());
+	    			set.add(item.getBaseSymbol());
+	    		});
+	    		
+	    		coinSet = set;
+	    		valueOperations.set(key, set);
+    		} 
+    		
+    	    log.info("缓存中HardId币种数据为：" + coinSet);
+    		 
+    		List<MemberWallet> walletList = new ArrayList<MemberWallet>();
+    		
+    		coinSet.forEach(item -> {
+    			MemberWallet wallet = walletService.findByCoinUnitAndMemberId(item, member.getId());
+
+    			CoinExchangeFactory.ExchangeRate rate = coinExchangeFactory.get(wallet.getCoin().getUnit());
+    			
+    			if (rate != null) {
+ 	                wallet.getCoin().setUsdRate(rate.getUsdRate().doubleValue());
+ 	                wallet.getCoin().setCnyRate(rate.getCnyRate().doubleValue());
+ 	            } else {
+ 	                log.info("unit = {} , rate = null ", wallet.getCoin().getUnit());
+ 	            }
+    	         
+    			walletList.add(wallet);
+    		});
+    		
+    		mr.setData(walletList);
+    		
+    		return mr;
+    	}
+    }
+    
 }

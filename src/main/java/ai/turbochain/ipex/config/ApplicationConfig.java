@@ -11,6 +11,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.servlet.LocaleResolver;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
@@ -70,14 +71,18 @@ public class ApplicationConfig extends WebMvcConfigurerAdapter {
 	 */
 	@Override
 	public void addInterceptors(InterceptorRegistry registry) {
-		registry.addInterceptor(getMemberInterceptor()).addPathPatterns("/**").excludePathPatterns("/register/**",
+		registry.addInterceptor(getMemberInterceptor())
+		.addPathPatterns("/**")
+		.excludePathPatterns("/register/**",
+				"/error",
 				"/mobile/code", "/email/code", "/email/login/code", "/email/reset/code", "/getKaptchaImage", "/login",
 				"/check", "/check/login", "/start/captcha", "/support/country", "/ancillary/**", "/announcement/**",
 				"/mobile/reset/code", "/reset/email/code", "/mobile-register/email", "/mobile-register/reset-password",
 				"/mobile-exange/asset/wallet/**", "/mobile-exange/asset/quick-pay", "/reset/login/password",
 				"/vote/info", "/coin/supported", "/financial/items/**", "/coin/guess/index", "/coin/guess/record",
-				"/hard-id/saveNone", "/hard-id/reset-password", "/coin/guess/detail", "/coin/cny-rate/**",
-				"/coin/guess/type");
+				"/hard-id/saveNone", "/hard-id/register", "/hard-id/reset-password", "/coin/guess/detail", "/coin/cny-rate/**",
+				"/hard-id/art-member/update",
+				"/coin/guess/type","/query-asset/cny-rate");
 
 		super.addInterceptors(registry);
 	}

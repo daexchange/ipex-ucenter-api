@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -50,6 +51,7 @@ import ai.turbochain.ipex.entity.OtcCoin;
 import ai.turbochain.ipex.entity.OtcCoinSubscription;
 import ai.turbochain.ipex.entity.QOtcCoinSubscription;
 import ai.turbochain.ipex.entity.transform.AuthMember;
+import ai.turbochain.ipex.interceptor.MemberInterceptor;
 import ai.turbochain.ipex.service.CoinService;
 import ai.turbochain.ipex.service.LocaleMessageSourceService;
 import ai.turbochain.ipex.service.MemberLegalCurrencyWalletService;
@@ -84,7 +86,8 @@ public class HardIdRegisterController {
 	private MemberWalletService memberWalletService;
 	@Autowired
 	private MemberLegalCurrencyWalletService memberLegalCurrencyWalletService;
-
+	
+	
 	/**
 	 * 注册
 	 *
@@ -109,7 +112,9 @@ public class HardIdRegisterController {
 		// HardId不需要密码
 		hardIdRegister.setPassword("123456");
 		
-		Member bean = getMember(hardIdRegister);
+		Integer origin = MemberRegisterOriginEnum.HARDID.getSourceType();
+		
+		Member bean = getMember(hardIdRegister,origin);
 		
 		if (StringUtils.isNotBlank(userName)) {
 			bean.setNickName(userName);
@@ -126,7 +131,7 @@ public class HardIdRegisterController {
 
 			map.put("memberId", memberId);
 
-			afterRegister(memberId);
+			afterRegister(memberId,"");
 
 			MessageResult mr = new MessageResult();
 
@@ -212,62 +217,80 @@ public class HardIdRegisterController {
 	@PostMapping(value = "/register")
 	// @RequestMapping(value ="/register")
 	@Transactional(rollbackFor = Exception.class)
-	public MessageResult register(@Valid HardIdRegister hardIdRegister, BindingResult bindingResult,
+	public MessageResult register(@Valid @RequestBody HardIdRegister hardIdRegister, BindingResult bindingResult,
 			HttpServletRequest request) throws Exception {
 
 		log.info("register start");
+		
+		String ip = request.getHeader("X-Real-IP");
 
-		// HardId不需要密码
-		hardIdRegister.setPassword("123456");
+		log.info("request ip:" + ip);
 
+		Integer origin = MemberRegisterOriginEnum.HARDID.getSourceType();
+		
+		String clientId = request.getHeader("clientId");
+
+	    if ("6".equals(clientId)) {
+	    	origin = MemberInterceptor.origin_ART; 
+	    } else {
+	    	// HardId不需要密码
+			hardIdRegister.setPassword("123456");
+			
+			origin = MemberRegisterOriginEnum.HARDID.getSourceType();// 代表来自应用HardId
+	    }
+
+	    log.info("clientId:" + clientId);
+	    
 		MessageResult result = BindingResultUtil.validate(bindingResult);
 
 		if (result != null) {
 			return result;
 		}
 
-		String ip = request.getHeader("X-Real-IP");
-
-		log.info("request ip:" + ip);
-
 		String email = hardIdRegister.getEmail();
 		String mobilePhone = hardIdRegister.getMobilePhone();
-
-		//if (StringUtils.isBlank(mobilePhone) && StringUtils.isBlank(email)) {
-		//	return error("请输入绑定手机号和邮箱地址");
-		//} else {
-		//}
-		Member member = null;
+		
+		if (StringUtils.isBlank(mobilePhone) && StringUtils.isBlank(email)) {
+			return error("请输入绑定手机号和邮箱地址");
+		} 
+		
+		Member memberOld = null;
+		
 		if (StringUtils.isNotBlank(mobilePhone) && StringUtils.isNotBlank(email)) {
-			Integer origin = MemberRegisterOriginEnum.HARDID.getSourceType();
-			member = memberService.findMemberByMobilePhoneAndOriginOrEmailAndOrigin(mobilePhone,origin, email,origin);
+			memberOld = memberService.findMemberByMobilePhoneAndOriginOrEmailAndOrigin(mobilePhone,origin, email,origin);
 		} else if (StringUtils.isNotBlank(mobilePhone)) {
-			member = memberService.findByPhoneAndOrigin(mobilePhone,MemberRegisterOriginEnum.IPEX.getSourceType());
+			memberOld = memberService.findByPhoneAndOrigin(mobilePhone, origin);
 		} else if (StringUtils.isNotBlank(email)) {
-			member = memberService.findByEmailAndOrigin(email,MemberRegisterOriginEnum.IPEX.getSourceType());
+			memberOld = memberService.findByEmailAndOrigin(email, origin);
 		} else {
 			return error(localeMessageSourceService.getMessage("REGISTRATION_FAILED"));
 		}
 
-		if (member == null) { // 新增
-
-			Member member1 = memberService.save(getMember(hardIdRegister));
-
+		if (memberOld == null) {// 新增
+			Member member = getMember(hardIdRegister,origin);
+			
+			member.setClientId(clientId);
+			
+			Member member1 = memberService.save(member);
+			
 			log.info("register end");
 
 			if (member1 != null) {
-				afterRegister(member1.getId());
-				return success(localeMessageSourceService.getMessage("REGISTRATION_SUCCESS"));
+				afterRegister(member1.getId(),clientId);
+				
+				MessageResult mr = new MessageResult();
+
+				mr.setCode(0);
+				mr.setMessage(localeMessageSourceService.getMessage("REGISTRATION_SUCCESS"));
+				mr.setData(member1.getId());
+				
+				return mr;
 			} else {
 				return error(localeMessageSourceService.getMessage("REGISTRATION_FAILED"));
 			}
 		} else {
-			if (MemberRegisterOriginEnum.HARDID.getSourceType().intValue() != member.getOrigin().intValue()) {
-				return error("当前邮箱或手机号已注册");
-			}
-
-			member.setEmail(hardIdRegister.getEmail());
-			member.setMobilePhone(hardIdRegister.getMobilePhone());
+			memberOld.setEmail(hardIdRegister.getEmail());
+			memberOld.setMobilePhone(hardIdRegister.getMobilePhone());
 
 			// 不可重复随机数
 			String loginNo = String.valueOf(idWorkByTwitter.nextId());
@@ -276,12 +299,13 @@ public class HardIdRegisterController {
 			// 生成密码
 			String password = Md5.md5Digest(hardIdRegister.getPassword() + credentialsSalt).toLowerCase();
 
-			member.setPassword(password);// 更新密码
+			memberOld.setPassword(password);// 更新密码
 
 			return success(localeMessageSourceService.getMessage("REGISTRATION_SUCCESS"));
 		}
 	}
 
+	
 	/**
 	 * 忘记密码后重置密码
 	 *
@@ -334,7 +358,7 @@ public class HardIdRegisterController {
 		return success();
 	}
 
-	Member getMember(HardIdRegister hardIdRegister) throws Exception {
+	Member getMember(HardIdRegister hardIdRegister,Integer origin) throws Exception {
 		Member member = new Member();
 
 		// 不可重复随机数
@@ -358,108 +382,125 @@ public class HardIdRegisterController {
 		member.setEmail(hardIdRegister.getEmail());
 		member.setMobilePhone(hardIdRegister.getMobilePhone());
 		member.setSalt(credentialsSalt);
-		member.setOrigin(MemberRegisterOriginEnum.HARDID.getSourceType());// 代表来自应用HardId
-
+		member.setOrigin(origin);
+		member.setNickName(hardIdRegister.getUserName());
+		member.setUsername(hardIdRegister.getUserName());
+		
 		return member;
 	}
 
 	/**
 	 * 注册成功后的操作
 	 */
-	public void afterRegister(Long memberId) {
+	public void afterRegister(Long memberId,String clientId) {
 		executorService.execute(new Runnable() {
 			public void run() {
-				registerCoin(memberId);
+				if ("6".equals(clientId)) {
+					registerCoin(memberId,true,false,true);
+				} else {
+					registerCoin(memberId,true,true,true);
+				}
 			}
 		});
 	}
 
-	public void registerCoin(Long memberId) {
-		String pwrAddress = "";
-		String ethAddress = "";
-		// 获取所有支持的币种
-		List<Coin> coins = coinService.findAll();
-		for (Coin coin : coins) {
-			MemberWallet wallet = new MemberWallet();
-			wallet.setCoin(coin);
-			wallet.setMemberId(memberId);
-			wallet.setBalance(new BigDecimal(0));
-			wallet.setFrozenBalance(new BigDecimal(0));
-			if ((coin.getIsToken().isIs() == true && coin.getChainName().equals("PWR")
-					&& StringUtils.isNotBlank(pwrAddress) == true)
-					|| (coin.getUnit().equals("PWR") && StringUtils.isNotBlank(pwrAddress) == true)) {
-				wallet.setAddress(pwrAddress);
-			} else if ((coin.getIsToken().isIs() == true && coin.getChainName().equals("ETH")
-					&& StringUtils.isNotBlank(ethAddress) == true)
-					|| (coin.getUnit().equals("ETH") && StringUtils.isNotBlank(ethAddress) == true)) {
-				wallet.setAddress(ethAddress);
-			} else {
-				String serviceName = "";
-				if (coin.getEnableRpc() == BooleanEnum.IS_TRUE) {
-					if (coin.getIsToken().isIs() == true && coin.getChainName() != null) {
-						// 远程RPC服务URL,后缀为币种单位
-						serviceName = "SERVICE-RPC-" + coin.getChainName();
-					} else {
-						serviceName = "SERVICE-RPC-" + coin.getUnit();
-					}
-					try {
-						String account = "U" + memberId;
-						String url = "http://" + serviceName + "/rpc/address/{account}";
-						ResponseEntity<MessageResult> result = restTemplate.getForEntity(url, MessageResult.class,
-								account);
-						if (result.getStatusCode().value() == 200) {
-							MessageResult mr = result.getBody();
-							if (mr.getCode() == 0) {
-								// 返回地址成功，调用持久化
-								String address = (String) mr.getData();
-								wallet.setAddress(address);
-								if ((coin.getIsToken().isIs() == true && coin.getChainName().equals("ETH") == true)
-										|| coin.getUnit().equals("ETH") == true) {
-									ethAddress = address;
-								} else if ((coin.getIsToken().isIs() == true
-										&& coin.getChainName().equals("PWR") == true)
-										|| coin.getUnit().equals("PWR") == true) {
-									pwrAddress = address;
+	public void registerCoin(Long memberId,boolean isExchange,boolean isOtc,boolean isLoan) {
+		
+		if (isExchange) {
+			String pwrAddress = "";
+			String ethAddress = "";
+			// 获取所有支持的币种
+			List<Coin> coins = coinService.findAll();
+			for (Coin coin : coins) {
+				MemberWallet wallet = new MemberWallet();
+				wallet.setCoin(coin);
+				wallet.setMemberId(memberId);
+				wallet.setBalance(new BigDecimal(0));
+				wallet.setFrozenBalance(new BigDecimal(0));
+				if ((coin.getIsToken().isIs() == true && coin.getChainName().equals("PWR")
+						&& StringUtils.isNotBlank(pwrAddress) == true)
+						|| (coin.getUnit().equals("PWR") && StringUtils.isNotBlank(pwrAddress) == true)) {
+					wallet.setAddress(pwrAddress);
+				} else if ((coin.getIsToken().isIs() == true && coin.getChainName().equals("ETH")
+						&& StringUtils.isNotBlank(ethAddress) == true)
+						|| (coin.getUnit().equals("ETH") && StringUtils.isNotBlank(ethAddress) == true)) {
+					wallet.setAddress(ethAddress);
+				} else {
+					String serviceName = "";
+					if (coin.getEnableRpc() == BooleanEnum.IS_TRUE) {
+						if (coin.getIsToken().isIs() == true && coin.getChainName() != null) {
+							// 远程RPC服务URL,后缀为币种单位
+							serviceName = "SERVICE-RPC-" + coin.getChainName();
+						} else {
+							serviceName = "SERVICE-RPC-" + coin.getUnit();
+						}
+						try {
+							String account = "U" + memberId;
+							String url = "http://" + serviceName + "/rpc/address/{account}";
+							ResponseEntity<MessageResult> result = restTemplate.getForEntity(url, MessageResult.class,
+									account);
+							if (result.getStatusCode().value() == 200) {
+								MessageResult mr = result.getBody();
+								if (mr.getCode() == 0) {
+									// 返回地址成功，调用持久化
+									String address = (String) mr.getData();
+									wallet.setAddress(address);
+									if ((coin.getIsToken().isIs() == true && coin.getChainName().equals("ETH") == true)
+											|| coin.getUnit().equals("ETH") == true) {
+										ethAddress = address;
+									} else if ((coin.getIsToken().isIs() == true
+											&& coin.getChainName().equals("PWR") == true)
+											|| coin.getUnit().equals("PWR") == true) {
+										pwrAddress = address;
+									}
 								}
 							}
+						} catch (Exception e) {
+							e.printStackTrace();
+							wallet.setAddress("");
 						}
-					} catch (Exception e) {
+					} else {
 						wallet.setAddress("");
 					}
-				} else {
-					wallet.setAddress("");
 				}
+				// 保存
+				memberWalletService.save(wallet);
 			}
-			// 保存
-			memberWalletService.save(wallet);
-		}
-
-		// 获取所有支持的币种
-		BooleanExpression eq = QOtcCoinSubscription.otcCoinSubscription.origin.eq(2);
-		PageModel pageModel = new PageModel();
-		pageModel.setPageNo(1);
-		pageModel.setPageSize(10);
-    	Page<OtcCoinSubscription> page = otcCoinSubscriptionService.findAll(eq, pageModel);
-    	List<OtcCoinSubscription> otcCoins = page.getContent();
-		
-		for (OtcCoinSubscription otcCoinSubscription : otcCoins) {
-			OtcCoin coin = otcCoinSubscription.getOtcCoin();
-			MemberLegalCurrencyWallet memberLegalCurrencyWallet = new MemberLegalCurrencyWallet();
-
-			memberLegalCurrencyWallet.setOtcCoin(coin);
-			memberLegalCurrencyWallet.setMemberId(memberId);
-			memberLegalCurrencyWallet.setBalance(BigDecimal.ZERO);
-			memberLegalCurrencyWallet.setFrozenBalance(BigDecimal.ZERO);
-			memberLegalCurrencyWallet.setToReleased(BigDecimal.ZERO);
-
-			memberLegalCurrencyWalletService.save(memberLegalCurrencyWallet);
 		}
 		
-		// 创建借贷钱包
-		String serviceLoanName = "LOAN-API";
-        String url = "http://" + serviceLoanName + "/loan/wallet/member/create?memberId=" + memberId;
-         
-        ResponseEntity<MessageResult> result = restTemplate.getForEntity(url, MessageResult.class);
+		if (isOtc) {
+			// 获取所有支持的币种
+			BooleanExpression eq = QOtcCoinSubscription.otcCoinSubscription.origin.eq(2);
+			PageModel pageModel = new PageModel();
+			pageModel.setPageNo(1);
+			pageModel.setPageSize(10);
+	    	Page<OtcCoinSubscription> page = otcCoinSubscriptionService.findAll(eq, pageModel);
+	    	List<OtcCoinSubscription> otcCoins = page.getContent();
+			
+			for (OtcCoinSubscription otcCoinSubscription : otcCoins) {
+				OtcCoin coin = otcCoinSubscription.getOtcCoin();
+				MemberLegalCurrencyWallet memberLegalCurrencyWallet = new MemberLegalCurrencyWallet();
+
+				memberLegalCurrencyWallet.setOtcCoin(coin);
+				memberLegalCurrencyWallet.setMemberId(memberId);
+				memberLegalCurrencyWallet.setBalance(BigDecimal.ZERO);
+				memberLegalCurrencyWallet.setFrozenBalance(BigDecimal.ZERO);
+				memberLegalCurrencyWallet.setToReleased(BigDecimal.ZERO);
+
+				memberLegalCurrencyWalletService.save(memberLegalCurrencyWallet);
+			}
+		}
+		
+		if (isLoan) {
+			// 创建借贷钱包
+			String serviceLoanName = "LOAN-API";
+			
+	        String url = "http://" + serviceLoanName + "/loan/wallet/memberWallet/create?memberId=" + memberId;
+	         
+	        ResponseEntity<MessageResult> result = restTemplate.getForEntity(url, MessageResult.class);
+		
+	        System.out.println("====LOAN-API===memberWallet/create==="+result.getBody());
+		}
 	}
 	
 	
@@ -512,4 +553,54 @@ public class HardIdRegisterController {
 		}
 	}
 	
+	
+	/**
+	 * 更新用户名，头像信息
+	 *
+	 * @param HardIdRegister
+	 * @param bindingResult
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/art-member/update")
+	public MessageResult updateArt(@Valid @RequestBody HardIdRegister hardIdRegister,
+			BindingResult bindingResult, HttpServletRequest request) throws Exception {
+
+		log.info("bind start");
+
+		MessageResult result = BindingResultUtil.validate(bindingResult);
+
+		if (result != null) {
+			return result;
+		}
+
+		String ip = request.getHeader("X-Real-IP");
+
+		log.info("request ip:" + ip);
+
+		String userName = hardIdRegister.getUserName();
+		String avatar = hardIdRegister.getAvatar();
+		
+		if (StringUtils.isBlank(userName)&&StringUtils.isBlank(avatar)) {
+			return error("用户名、头像信息不能为空");
+		}
+		
+		Integer origin = MemberRegisterOriginEnum.HARDID.getSourceType();
+		
+		Member memberOld = memberService.findByPhoneAndOrigin(hardIdRegister.getMobilePhone(), origin);
+
+		if (memberOld == null) { // 新增
+			return error("会员信息不存在");
+		} else {
+			memberOld.setAvatar(avatar);
+			memberOld.setNickName(userName);
+			memberOld.setUsername(userName);
+			try {
+				memberService.save(memberOld);
+			} catch (Exception e) {
+				e.printStackTrace();
+				// return error("该手机号或邮箱地址已被绑定");
+			}
+			return success("更新成功");
+		}
+	}
 }

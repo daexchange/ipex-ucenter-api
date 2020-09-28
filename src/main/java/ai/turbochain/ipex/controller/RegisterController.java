@@ -710,6 +710,8 @@ public class RegisterController {
         member.setPassword(password);
         member.setEmail(loginByEmail.getEmail());
         member.setSalt(credentialsSalt);
+        member.setOrigin(MemberRegisterOriginEnum.IPEX.getSourceType());
+        
         return member;
     }
     
